@@ -3193,6 +3193,33 @@ setInterval(async () => {
   function openMobileSheet(){
     sheet.style.cssText = 'display:block;position:fixed;bottom:0;left:0;right:0;background:#0f0f0f;border-top:2px solid #7c6aff;border-radius:20px 20px 0 0;z-index:99999;padding:14px 20px 36px;max-height:85vh;overflow-y:auto;-webkit-overflow-scrolling:touch;color:#f2f2f2;';
     scrim.style.display = 'block';
+    try {
+      var mode = localStorage.getItem('exec_mode') || 'dark';
+      var accent = localStorage.getItem('exec_accent') || '#7c6aff';
+      sheet.querySelectorAll('.m-tog').forEach(function(x){
+        var on = x.dataset.mode === mode;
+        x.style.background = on ? '#242424' : 'none';
+        x.style.color = on ? '#f2f2f2' : '#a0a0a0';
+      });
+      sheet.querySelectorAll('.m-sw').forEach(function(x){
+        x.style.boxShadow = x.dataset.c === accent ? '0 0 0 2px #0f0f0f,0 0 0 4px #d4d4d4' : 'none';
+      });
+    } catch(e){}
+    try {
+      if(typeof supabase !== 'undefined' && supabase){
+        supabase.auth.getUser().then(function(r){
+          try {
+            if(r && r.data && r.data.user){
+              var em = r.data.user.email || '';
+              document.getElementById('m-email').textContent = em;
+              document.getElementById('m-avatar').textContent = em ? em[0].toUpperCase() : '?';
+              document.getElementById('m-sync').textContent = '● synced';
+              document.getElementById('m-sync').style.color = '#2ecc71';
+            }
+          } catch(e){}
+        });
+      }
+    } catch(e){}
   }
 
   function closeMobileSheet(){
