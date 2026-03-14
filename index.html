@@ -3191,8 +3191,6 @@ setInterval(async () => {
   });
 
   function openMobileSheet(){
-    sheet.style.cssText = 'display:block !important;position:fixed;bottom:0;left:0;right:0;width:100%;height:300px;background:red;z-index:99999;';
-    scrim.style.display = 'block';
     /* Sync current mode */
     var mode = localStorage.getItem('exec_mode') || 'dark';
     var accent = localStorage.getItem('exec_accent') || '#7c6aff';
@@ -3204,7 +3202,6 @@ setInterval(async () => {
     sheet.querySelectorAll('.m-sw').forEach(function(x){
       x.style.boxShadow = x.dataset.c === accent ? '0 0 0 2px var(--bg2),0 0 0 4px var(--text2)' : 'none';
     });
-    /* Sync account info */
     if(typeof supabase !== 'undefined' && supabase){
       supabase.auth.getUser().then(function(r){
         if(r.data && r.data.user){
@@ -3216,6 +3213,9 @@ setInterval(async () => {
         }
       });
     }
+    sheet.style.cssText = 'display:block;position:fixed;bottom:0;left:0;right:0;background:var(--bg2);border-top:1px solid var(--border2);border-radius:20px 20px 0 0;z-index:99999;padding:14px 20px 36px;max-height:85vh;overflow-y:auto;-webkit-overflow-scrolling:touch;';
+    scrim.style.display = 'block';
+  }
     scrim.style.display = 'block';
     sheet.style.display = 'block';
   }
