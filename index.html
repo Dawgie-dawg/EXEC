@@ -675,6 +675,12 @@ function save() {
 
 async function _pushToSupabase() {
   if (!_currentUser) return;
+  if (!navigator.onLine) {
+    console.log('[EXEC] Offline — queuing save for later');
+    _saveQueue = true;
+    setSyncDot('');
+    return;
+  }
   try {
     const payload = {
       user_id: _currentUser.id,
@@ -750,7 +756,7 @@ function _subscribeRealtime(userId) {
 function setSyncDot(status) {
   const d = document.getElementById('sync-dot');
   if (d) {
-    d.style.background = status === 'syncing' ? 'var(--orange)' : status === 'error' ? 'var(--red)' : 'var(--green)';
+    d.style.background = status === 'syncing' ? 'var(--orange)' : status === 'error' ? 'var(--red)' : status === 'offline' ? '#636363' : 'var(--green)';
   }
   const ss = document.getElementById('settings-sync-status');
   if (ss) {
@@ -2724,6 +2730,53 @@ document.addEventListener('DOMContentLoaded', function() {
     if (el) el.addEventListener('keydown', function(e) { if (e.key === 'Enter') authSubmit(); });
   });
 });
+
+// ── Offline detection ──
+let _isOnline = navigator.onLine;
+let _saveQueue = false;
+
+function _updateOnlineStatus() {
+  const wasOffline = !_isOnline;
+  _isOnline = navigator.onLine;
+  if (!_isOnline) {
+    setSyncDot('offline');
+    _showOfflineBanner();
+  } else {
+    _hideOfflineBanner();
+    if (wasOffline && _saveQueue && _currentUser) {
+      console.log('[EXEC] Back online — flushing save queue');
+      _saveQueue = false;
+      _pushToSupabase();
+    }
+  }
+}
+
+function _showOfflineBanner() {
+  if (document.getElementById('offline-banner')) return;
+  const b = document.createElement('div');
+  b.id = 'offline-banner';
+  b.style.cssText = 'position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:var(--bg3);border:1px solid var(--border2);color:var(--text2);font-size:13px;font-family:var(--sans);padding:10px 20px;border-radius:8px;z-index:9999;display:flex;align-items:center;gap:8px;box-shadow:0 4px 20px rgba(0,0,0,0.3)';
+  b.innerHTML = '<span style="width:8px;height:8px;border-radius:50%;background:#636363;flex-shrink:0;display:inline-block"></span>You're offline — changes saved locally';
+  document.body.appendChild(b);
+}
+
+function _hideOfflineBanner() {
+  const b = document.getElementById('offline-banner');
+  if (b) b.remove();
+}
+
+window.addEventListener('online', _updateOnlineStatus);
+window.addEventListener('offline', _updateOnlineStatus);
+
+// ── Service Worker registration ──
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js')
+      .then(() => console.log('[EXEC] Service Worker registered'))
+      .catch(err => console.log('[EXEC] SW skipped:', err.message));
+  });
+}
+
 </script>
 </body>
 </html>
