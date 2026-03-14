@@ -34,136 +34,6 @@
 #sync-dot{width:6px;height:6px;border-radius:50%;background:var(--green);flex-shrink:0;transition:background 0.3s;}
 #sync-dot.syncing{background:var(--orange);}
 #sync-dot.error{background:var(--red);}
-
-/* ── Safari fix: overflow:hidden on body kills position:fixed ── */
-@media (max-width:820px){
-  body{overflow:auto !important;}
-  #scroll-container{position:relative !important;top:auto !important;left:auto !important;right:auto !important;bottom:auto !important;overflow:visible !important;height:auto !important;}
-}
-/* ── Mobile UI ── */
-@media (max-width:820px){
-  /* Hide desktop nav elements */
-  .nav-metrics{display:none;}
-  .sub-nav{display:none;}
-  #undo-btn,#redo-btn,#undo-hint{display:none;}
-
-  /* Top nav: logo + clock left, actions right */
-  nav{grid-template-columns:auto 1fr;padding:0 14px;height:48px;}
-  .nav-left{gap:14px;}
-  .nav-logo{font-size:13px;}
-  .nav-clock{font-size:20px;}
-  .nav-right{gap:8px;}
-  .quick-add-btn{padding:6px 12px;font-size:12px;}
-
-  /* Scroll container: top = nav only, bottom = floating nav height */
-  #scroll-container{top:48px;bottom:0;padding-bottom:88px;}
-
-  /* Sections: tighter padding */
-  .section{padding:16px 14px;max-width:100%;}
-
-  /* Modals: full-width sheet from bottom */
-  .modal{width:100%!important;max-width:100%!important;border-radius:20px 20px 0 0;padding:24px 20px;position:fixed;bottom:0;left:0;right:0;margin:0;max-height:92vh;overflow-y:auto;}
-  .modal-overlay{align-items:flex-end;}
-
-  /* Note composer: full screen */
-  .note-composer{width:100%!important;max-width:100%!important;max-height:100vh;border-radius:0;}
-  .note-composer-overlay{padding-top:0;}
-
-  /* Task row: always show actions (no hover on mobile) */
-  .task-row-actions{opacity:1!important;pointer-events:all!important;}
-  .task-row-main{max-width:calc(100% - 120px);}
-
-  /* Dashboard stat strip: 2 cols */
-  .db-stat-strip{grid-template-columns:1fr 1fr;}
-
-  /* Timer: scale down for small screens */
-  .timer-ring{width:220px;height:220px;}
-  .timer-ring svg{width:220px;height:220px;}
-  .timer-time{font-size:42px;}
-
-  /* Bottom floating nav pill */
-  #mobile-bottom-nav{
-    display:flex;
-    position:fixed;
-    bottom:12px;
-    left:12px;
-    right:12px;
-    height:58px;
-    background:var(--bg3);
-    border:1px solid var(--border2);
-    border-radius:20px;
-    z-index:200;
-    overflow:hidden;
-  }
-  .m-nav-item{
-    flex:1;
-    display:flex;
-    flex-direction:column;
-    align-items:center;
-    justify-content:center;
-    gap:3px;
-    border:none;
-    background:none;
-    cursor:pointer;
-    transition:background 0.15s;
-    padding:0;
-    border-radius:0;
-  }
-  .m-nav-item.active{background:rgba(124,106,255,0.18);}
-  .m-nav-icon{font-size:18px;line-height:1;opacity:0.35;}
-  .m-nav-item.active .m-nav-icon{opacity:1;}
-  .m-nav-label{font-size:10px;font-weight:500;color:var(--text3);font-family:var(--sans);letter-spacing:0.2px;}
-  .m-nav-item.active .m-nav-label{color:var(--accent);font-weight:700;}
-
-  /* Mobile settings sheet */
-  #mobile-settings-sheet{
-    display:none;
-    position:fixed;
-    bottom:0;left:0;right:0;
-    background:var(--bg2);
-    border-top:1px solid var(--border2);
-    border-radius:20px 20px 0 0;
-    z-index:400;
-    padding:14px 20px 32px;
-    max-height:85vh;
-    overflow-y:auto;
-  }
-  #mobile-settings-sheet.active{display:block;}
-  #mobile-settings-scrim{
-    display:none;
-    position:fixed;inset:0;
-    background:rgba(0,0,0,0.6);
-    z-index:399;
-  }
-  #mobile-settings-scrim.active{display:block;}
-  .m-sheet-handle{width:36px;height:4px;background:var(--border2);border-radius:2px;margin:0 auto 16px;}
-  .m-sheet-title{font-size:13px;font-weight:700;color:var(--text);letter-spacing:1px;margin-bottom:14px;}
-  .m-sheet-row{display:flex;align-items:center;justify-content:space-between;padding:11px 0;border-bottom:1px solid var(--border);}
-  .m-sheet-row:last-child{border-bottom:none;}
-  .m-sheet-label{font-size:13px;color:var(--text2);font-weight:500;}
-  .m-sheet-section{font-size:11px;color:var(--text3);letter-spacing:0.15em;text-transform:uppercase;padding:14px 0 6px;}
-  .m-toggle-group{display:flex;background:var(--bg3);border-radius:6px;padding:2px;gap:2px;}
-  .m-toggle-btn{padding:5px 13px;border-radius:4px;font-size:12px;font-weight:500;border:none;background:none;color:var(--text3);cursor:pointer;font-family:var(--sans);transition:all 0.15s;}
-  .m-toggle-btn.active{background:var(--bg4);color:var(--text);}
-  .m-swatch-row{display:flex;gap:8px;}
-  .m-swatch{width:22px;height:22px;border-radius:50%;cursor:pointer;transition:transform 0.15s,box-shadow 0.15s;}
-  .m-swatch:hover{transform:scale(1.15);}
-  .m-swatch.active{box-shadow:0 0 0 2px var(--bg2),0 0 0 4px var(--text2);}
-  .m-btn-row{display:flex;gap:8px;}
-  .m-btn{padding:7px 14px;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;border:1px solid var(--border);background:var(--bg3);color:var(--text2);font-family:var(--sans);transition:all 0.15s;flex:1;text-align:center;}
-  .m-btn:hover{border-color:var(--border2);color:var(--text);}
-  .m-btn-danger{background:rgba(231,76,60,0.12);color:var(--red);border-color:rgba(231,76,60,0.25);}
-  .m-user-row{display:flex;align-items:center;gap:10px;}
-  .m-avatar{width:34px;height:34px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#fff;flex-shrink:0;}
-  .m-user-email{font-size:12px;color:var(--text2);font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:160px;}
-  .m-user-status{font-size:11px;color:var(--text3);margin-top:2px;}
-  .m-user-status.synced{color:var(--green);}
-}
-
-/* Hide mobile elements on desktop */
-#mobile-bottom-nav{display:none;}
-#mobile-settings-sheet{display:none;}
-#mobile-settings-scrim{display:none;}
 </style>
 </head>
 <body>
@@ -572,7 +442,7 @@
     <div id="sync-dot" style="width:6px;height:6px;border-radius:50%;background:var(--green);flex-shrink:0;display:none"></div>
     <button id="undo-btn" class="settings-btn" onclick="undo()" title="Undo (Ctrl+Z)" disabled style="font-size:13px">↩</button>
     <button id="redo-btn" class="settings-btn" onclick="redo()" title="Redo (Ctrl+Y)" disabled style="font-size:13px">↪</button><button class="quick-add-btn" onclick="openQuickAdd()"><span class="quick-add-icon">⚡</span> Quick Add</button>
-    <button class="settings-btn" onclick="if(window.innerWidth<=820){openMobileSettings()}else{openSettings()}" title="Settings">⚙</button>
+    <button class="settings-btn" id="settings-btn-main" title="Settings">⚙</button>
   </div>
 </nav>
 <!-- SUB-NAV TABS -->
@@ -1360,7 +1230,6 @@ if (id === 'notes') renderNotes();
 if (id === 'focus') renderFocusSelect();
 if (id === 'review') renderReview();
 if (id === 'braindump') renderBrainDump();
-if (typeof syncMobileNav === 'function') syncMobileNav(id);
 }
 function openQuickAdd() {
 document.getElementById('quick-add-overlay').classList.add('active');
@@ -3101,165 +2970,267 @@ setInterval(async () => {
 }, 5000);
 
 // ── Service Worker registration ──
-/* ── Mobile bottom nav + settings sheet ── */
-</script>
-<!-- MOBILE BOTTOM NAV -->
-<div id="mobile-bottom-nav">
-  <button class="m-nav-item active" id="mnav-dashboard" onclick="mobileNav('dashboard',this)">
-    <span class="m-nav-icon">⊞</span>
-    <span class="m-nav-label">Dash</span>
-  </button>
-  <button class="m-nav-item" id="mnav-braindump" onclick="mobileNav('braindump',this)">
-    <span class="m-nav-icon">⚡</span>
-    <span class="m-nav-label">Capture</span>
-  </button>
-  <button class="m-nav-item" id="mnav-tasks" onclick="mobileNav('tasks',this)">
-    <span class="m-nav-icon">✓</span>
-    <span class="m-nav-label">Tasks</span>
-  </button>
-  <button class="m-nav-item" id="mnav-focus" onclick="mobileNav('focus',this)">
-    <span class="m-nav-icon">◎</span>
-    <span class="m-nav-label">Focus</span>
-  </button>
-  <button class="m-nav-item" id="mnav-notes" onclick="mobileNav('notes',this)">
-    <span class="m-nav-icon">♪</span>
-    <span class="m-nav-label">Notes</span>
-  </button>
-</div>
 
-<!-- MOBILE SETTINGS SCRIM -->
-<div id="mobile-settings-scrim" onclick="closeMobileSettings()"></div>
+/* ── MOBILE UI ── */
+(function(){
+  if(window.innerWidth > 900) return; // desktop only beyond 900px
 
-<!-- MOBILE SETTINGS SHEET -->
-<div id="mobile-settings-sheet">
-  <div class="m-sheet-handle"></div>
-  <div class="m-sheet-title">⚙ SETTINGS</div>
+  var IS_MOBILE = true;
 
-  <div class="m-sheet-row">
-    <div class="m-sheet-label">Mode</div>
-    <div class="m-toggle-group" id="m-mode-toggle">
-      <button class="m-toggle-btn active" data-mode="dark" onclick="mobileSetMode('dark',this)">Dark</button>
-      <button class="m-toggle-btn" data-mode="light" onclick="mobileSetMode('light',this)">Light</button>
-      <button class="m-toggle-btn" data-mode="bloomberg" onclick="mobileSetMode('bloomberg',this)">Med</button>
-    </div>
-  </div>
+  /* 1. Rewrite body layout so fixed children work in Safari */
+  document.body.style.cssText = 'overflow:hidden;height:100%;width:100%;position:fixed;top:0;left:0;right:0;bottom:0;';
+  document.documentElement.style.cssText = 'height:100%;overflow:hidden;';
 
-  <div class="m-sheet-row">
-    <div class="m-sheet-label">Accent</div>
-    <div class="m-swatch-row">
-      <div class="m-swatch active" data-color="#7c6aff" style="background:#7c6aff" onclick="mobileSetAccent('#7c6aff','#5c4adf',this)" title="Violet"></div>
-      <div class="m-swatch" data-color="#00d2d3" style="background:#00d2d3" onclick="mobileSetAccent('#00d2d3','#00a8a9',this)" title="Cyan"></div>
-      <div class="m-swatch" data-color="#2ecc71" style="background:#2ecc71" onclick="mobileSetAccent('#2ecc71','#27ae60',this)" title="Green"></div>
-      <div class="m-swatch" data-color="#ff6b9d" style="background:#ff6b9d" onclick="mobileSetAccent('#ff6b9d','#e0507f',this)" title="Pink"></div>
-      <div class="m-swatch" data-color="#f39c12" style="background:#f39c12" onclick="mobileSetAccent('#f39c12','#d68910',this)" title="Orange"></div>
-      <div class="m-swatch" data-color="#e74c3c" style="background:#e74c3c" onclick="mobileSetAccent('#e74c3c','#c0392b',this)" title="Red"></div>
-      <div class="m-swatch" data-color="#3498db" style="background:#3498db" onclick="mobileSetAccent('#3498db','#2980b9',this)" title="Blue"></div>
-    </div>
-  </div>
+  /* Create a full-screen flex wrapper */
+  var wrapper = document.createElement('div');
+  wrapper.id = 'mobile-wrapper';
+  wrapper.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;display:flex;flex-direction:column;background:var(--bg);z-index:0;';
 
-  <div class="m-sheet-row">
-    <div class="m-sheet-label">Backup</div>
-    <div class="m-btn-row" style="flex:0;gap:8px;">
-      <button class="m-btn" onclick="saveBackup()">⬇ Download</button>
-      <button class="m-btn" onclick="document.getElementById('restore-input').click()">⬆ Restore</button>
-    </div>
-  </div>
+  /* Move nav into wrapper */
+  var nav = document.querySelector('nav');
+  var subNav = document.querySelector('.sub-nav');
+  var scrollCont = document.getElementById('scroll-container');
 
-  <div class="m-sheet-section">Account</div>
+  /* Style nav for mobile */
+  nav.style.cssText = 'position:relative;top:auto;left:auto;right:auto;flex-shrink:0;display:grid;grid-template-columns:auto 1fr;padding:0 14px;height:48px;z-index:auto;';
+  /* Hide desktop-only nav elements */
+  var metrics = nav.querySelector('.nav-metrics');
+  if(metrics) metrics.style.display = 'none';
+  var undoBtn = document.getElementById('undo-btn');
+  var redoBtn = document.getElementById('redo-btn');
+  var undoHint = document.getElementById('undo-hint');
+  if(undoBtn) undoBtn.style.display = 'none';
+  if(redoBtn) redoBtn.style.display = 'none';
+  if(undoHint) undoHint.style.display = 'none';
+  /* Shrink quick add button */
+  var qaBtn = nav.querySelector('.quick-add-btn');
+  if(qaBtn){ qaBtn.innerHTML = '<span>⚡</span> Add'; qaBtn.style.fontSize='12px'; qaBtn.style.padding='6px 10px'; }
 
-  <div class="m-sheet-row" style="border:none;padding-bottom:0">
-    <div class="m-user-row">
-      <div class="m-avatar" id="m-settings-avatar">?</div>
-      <div>
-        <div class="m-user-email" id="m-settings-email">Not signed in</div>
-        <div class="m-user-status" id="m-settings-sync">—</div>
-      </div>
-    </div>
-    <button class="m-btn m-btn-danger" style="flex:0;white-space:nowrap" onclick="authSignOut()">↩ Sign Out</button>
-  </div>
-</div>
+  /* Hide sub-nav (replaced by bottom bar) */
+  if(subNav) subNav.style.display = 'none';
 
-<script>
-function mobileNav(section, btn) {
-  document.querySelectorAll('.m-nav-item').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  const tabs = document.querySelectorAll('.nav-tab');
-  const sectionMap = {dashboard:0, braindump:1, tasks:2, focus:3, projects:4, notes:5, review:6};
-  const idx = sectionMap[section];
-  if (idx !== undefined) showSection(section, tabs[idx]);
-}
-function openMobileSettings() {
-  const mode = localStorage.getItem('exec_mode') || 'dark';
-  const accent = localStorage.getItem('exec_accent') || '#7c6aff';
-  document.querySelectorAll('#m-mode-toggle .m-toggle-btn').forEach(b => {
-    b.classList.toggle('active', b.dataset.mode === mode);
+  /* Style scroll container for mobile flex */
+  scrollCont.style.cssText = 'position:relative;top:auto;left:auto;right:auto;bottom:auto;flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;';
+
+  /* Section padding */
+  document.querySelectorAll('.section').forEach(function(s){
+    s.style.padding = '16px 14px';
+    s.style.maxWidth = '100%';
   });
-  document.querySelectorAll('.m-swatch').forEach(s => s.classList.toggle('active', s.dataset.color === accent));
-  const emailEl = document.getElementById('m-settings-email');
-  const avatarEl = document.getElementById('m-settings-avatar');
-  const syncEl = document.getElementById('m-settings-sync');
-  if (supabase) {
-    supabase.auth.getUser().then(({data}) => {
-      if (data && data.user) {
-        const email = data.user.email || '';
-        if (emailEl) emailEl.textContent = email;
-        if (avatarEl) avatarEl.textContent = email ? email[0].toUpperCase() : '?';
-        if (syncEl) { syncEl.textContent = '● synced'; syncEl.className = 'm-user-status synced'; }
-      } else {
-        if (emailEl) emailEl.textContent = 'Not signed in';
-        if (avatarEl) avatarEl.textContent = '?';
-        if (syncEl) { syncEl.textContent = '—'; syncEl.className = 'm-user-status'; }
-      }
+
+  /* Stat strip: 2 cols on mobile */
+  var styleEl = document.createElement('style');
+  styleEl.textContent =
+    '.db-stat-strip{grid-template-columns:repeat(2,1fr)!important;}' +
+    '.dash-grid-row2-inner{grid-template-columns:1fr!important;}' +
+    '.task-row-actions{opacity:1!important;pointer-events:all!important;}' +
+    '.task-row-main{max-width:calc(100% - 120px)!important;}' +
+    '.modal{width:100%!important;max-width:100%!important;border-radius:20px 20px 0 0!important;position:fixed!important;bottom:0!important;left:0!important;right:0!important;margin:0!important;max-height:90vh!important;overflow-y:auto!important;}' +
+    '.modal-overlay{align-items:flex-end!important;}' +
+    '.timer-ring{width:220px!important;height:220px!important;}' +
+    '.timer-ring svg{width:220px!important;height:220px!important;}' +
+    '.timer-time{font-size:42px!important;}';
+  document.head.appendChild(styleEl);
+
+  /* Move everything into wrapper */
+  document.body.appendChild(wrapper);
+  wrapper.appendChild(nav);
+  wrapper.appendChild(scrollCont);
+
+  /* 2. Bottom nav pill */
+  var bnav = document.createElement('div');
+  bnav.id = 'mobile-bnav';
+  bnav.style.cssText = 'flex-shrink:0;padding:8px 12px 12px;background:var(--bg);';
+  bnav.innerHTML =
+    '<div style="background:var(--bg3);border:1px solid var(--border2);border-radius:20px;display:flex;height:58px;overflow:hidden;">' +
+    '<button class="m-nb" data-s="dashboard" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;border:none;background:rgba(124,106,255,0.18);cursor:pointer;padding:0;">' +
+      '<span style="font-size:18px;line-height:1;">⊞</span>' +
+      '<span style="font-size:10px;font-weight:700;color:var(--accent);font-family:var(--sans);">Dash</span>' +
+    '</button>' +
+    '<button class="m-nb" data-s="braindump" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;border:none;background:none;cursor:pointer;padding:0;">' +
+      '<span style="font-size:18px;line-height:1;opacity:0.35;">⚡</span>' +
+      '<span style="font-size:10px;font-weight:500;color:var(--text3);font-family:var(--sans);">Capture</span>' +
+    '</button>' +
+    '<button class="m-nb" data-s="tasks" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;border:none;background:none;cursor:pointer;padding:0;">' +
+      '<span style="font-size:18px;line-height:1;opacity:0.35;">✓</span>' +
+      '<span style="font-size:10px;font-weight:500;color:var(--text3);font-family:var(--sans);">Tasks</span>' +
+    '</button>' +
+    '<button class="m-nb" data-s="focus" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;border:none;background:none;cursor:pointer;padding:0;">' +
+      '<span style="font-size:18px;line-height:1;opacity:0.35;">◎</span>' +
+      '<span style="font-size:10px;font-weight:500;color:var(--text3);font-family:var(--sans);">Focus</span>' +
+    '</button>' +
+    '<button class="m-nb" data-s="notes" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;border:none;background:none;cursor:pointer;padding:0;">' +
+      '<span style="font-size:18px;line-height:1;opacity:0.35;">♪</span>' +
+      '<span style="font-size:10px;font-weight:500;color:var(--text3);font-family:var(--sans);">Notes</span>' +
+    '</button>' +
+    '</div>';
+  wrapper.appendChild(bnav);
+
+  /* Bottom nav click handler */
+  var sectionMap = {dashboard:0,braindump:1,tasks:2,focus:3,projects:4,notes:5,review:6};
+  bnav.querySelectorAll('.m-nb').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var s = this.dataset.s;
+      var tabs = document.querySelectorAll('.nav-tab');
+      if(tabs[sectionMap[s]]) showSection(s, tabs[sectionMap[s]]);
+      /* Update active state */
+      bnav.querySelectorAll('.m-nb').forEach(function(b){
+        var isActive = b === btn;
+        b.style.background = isActive ? 'rgba(124,106,255,0.18)' : 'none';
+        b.querySelector('span:first-child').style.opacity = isActive ? '1' : '0.35';
+        var label = b.querySelector('span:last-child');
+        label.style.color = isActive ? 'var(--accent)' : 'var(--text3)';
+        label.style.fontWeight = isActive ? '700' : '500';
+      });
     });
-  }
-  document.getElementById('mobile-settings-sheet').classList.add('active');
-  document.getElementById('mobile-settings-scrim').classList.add('active');
-}
-function closeMobileSettings() {
-  document.getElementById('mobile-settings-sheet').classList.remove('active');
-  document.getElementById('mobile-settings-scrim').classList.remove('active');
-}
-function mobileSetMode(mode, btn) {
-  document.querySelectorAll('#m-mode-toggle .m-toggle-btn').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  document.body.classList.remove('light','bloomberg');
-  if (mode === 'light') document.body.classList.add('light');
-  if (mode === 'bloomberg') document.body.classList.add('bloomberg');
-  localStorage.setItem('exec_mode', mode);
-  document.querySelectorAll('#mode-toggle .settings-toggle-btn').forEach(b => {
-    b.classList.toggle('active', b.dataset.mode === mode);
   });
-}
-function mobileSetAccent(color, color2, el) {
-  document.querySelectorAll('.m-swatch').forEach(s => s.classList.remove('active'));
-  el.classList.add('active');
-  document.documentElement.style.setProperty('--accent', color);
-  document.documentElement.style.setProperty('--accent2', color2);
-  localStorage.setItem('exec_accent', color);
-  localStorage.setItem('exec_accent2', color2);
-  document.querySelectorAll('.swatch').forEach(s => s.classList.toggle('active', s.dataset.color === color));
-}
-/* Wire the ⚙ button on mobile to open the sheet instead of the desktop panel */
-(function() {
-  const settingsBtn = document.querySelector('.settings-btn[onclick="openSettings()"]');
-  if (settingsBtn) {
-    settingsBtn.addEventListener('click', function(e) {
-      if (window.innerWidth <= 820) {
-        e.stopImmediatePropagation();
-        openMobileSettings();
-      }
-    }, true);
+
+  /* Keep bottom nav in sync when desktop tabs are used */
+  var origShowSection = showSection;
+  showSection = function(id, btn){
+    origShowSection(id, btn);
+    bnav.querySelectorAll('.m-nb').forEach(function(b){
+      var isActive = b.dataset.s === id;
+      b.style.background = isActive ? 'rgba(124,106,255,0.18)' : 'none';
+      b.querySelector('span:first-child').style.opacity = isActive ? '1' : '0.35';
+      var label = b.querySelector('span:last-child');
+      label.style.color = isActive ? 'var(--accent)' : 'var(--text3)';
+      label.style.fontWeight = isActive ? '700' : '500';
+    });
+  };
+
+  /* 3. Mobile settings sheet */
+  var scrim = document.createElement('div');
+  scrim.id = 'm-scrim';
+  scrim.style.cssText = 'display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:1998;';
+  scrim.onclick = closeMobileSheet;
+  document.body.appendChild(scrim);
+
+  var sheet = document.createElement('div');
+  sheet.id = 'm-sheet';
+  sheet.style.cssText = 'display:none;position:fixed;bottom:0;left:0;right:0;background:var(--bg2);border-top:1px solid var(--border2);border-radius:20px 20px 0 0;z-index:1999;padding:14px 20px 36px;max-height:85vh;overflow-y:auto;-webkit-overflow-scrolling:touch;';
+  sheet.innerHTML =
+    '<div style="width:36px;height:4px;background:var(--border2);border-radius:2px;margin:0 auto 16px;"></div>' +
+    '<div style="font-size:13px;font-weight:700;color:var(--text);letter-spacing:1px;margin-bottom:14px;">⚙ SETTINGS</div>' +
+
+    '<div style="display:flex;align-items:center;justify-content:space-between;padding:11px 0;border-bottom:1px solid var(--border);">' +
+      '<span style="font-size:13px;color:var(--text2);font-weight:500;">Mode</span>' +
+      '<div style="display:flex;background:var(--bg3);border-radius:6px;padding:2px;gap:2px;" id="m-mode-grp">' +
+        '<button class="m-tog" data-mode="dark" style="padding:5px 12px;border-radius:4px;font-size:11px;font-weight:500;border:none;background:var(--bg4);color:var(--text);cursor:pointer;font-family:var(--sans);">Dark</button>' +
+        '<button class="m-tog" data-mode="light" style="padding:5px 12px;border-radius:4px;font-size:11px;font-weight:500;border:none;background:none;color:var(--text3);cursor:pointer;font-family:var(--sans);">Light</button>' +
+        '<button class="m-tog" data-mode="bloomberg" style="padding:5px 12px;border-radius:4px;font-size:11px;font-weight:500;border:none;background:none;color:var(--text3);cursor:pointer;font-family:var(--sans);">Med</button>' +
+      '</div>' +
+    '</div>' +
+
+    '<div style="display:flex;align-items:center;justify-content:space-between;padding:11px 0;border-bottom:1px solid var(--border);">' +
+      '<span style="font-size:13px;color:var(--text2);font-weight:500;">Accent</span>' +
+      '<div style="display:flex;gap:8px;" id="m-swatch-row">' +
+        '<div class="m-sw" data-c="#7c6aff" data-c2="#5c4adf" style="width:22px;height:22px;border-radius:50%;background:#7c6aff;cursor:pointer;box-shadow:0 0 0 2px var(--bg2),0 0 0 4px var(--text2);"></div>' +
+        '<div class="m-sw" data-c="#00d2d3" data-c2="#00a8a9" style="width:22px;height:22px;border-radius:50%;background:#00d2d3;cursor:pointer;"></div>' +
+        '<div class="m-sw" data-c="#2ecc71" data-c2="#27ae60" style="width:22px;height:22px;border-radius:50%;background:#2ecc71;cursor:pointer;"></div>' +
+        '<div class="m-sw" data-c="#ff6b9d" data-c2="#e0507f" style="width:22px;height:22px;border-radius:50%;background:#ff6b9d;cursor:pointer;"></div>' +
+        '<div class="m-sw" data-c="#f39c12" data-c2="#d68910" style="width:22px;height:22px;border-radius:50%;background:#f39c12;cursor:pointer;"></div>' +
+        '<div class="m-sw" data-c="#3498db" data-c2="#2980b9" style="width:22px;height:22px;border-radius:50%;background:#3498db;cursor:pointer;"></div>' +
+      '</div>' +
+    '</div>' +
+
+    '<div style="display:flex;align-items:center;justify-content:space-between;padding:11px 0;border-bottom:1px solid var(--border);">' +
+      '<span style="font-size:13px;color:var(--text2);font-weight:500;">Backup</span>' +
+      '<div style="display:flex;gap:8px;">' +
+        '<button onclick="saveBackup()" style="padding:7px 14px;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;border:1px solid var(--border);background:var(--bg3);color:var(--text2);font-family:var(--sans);">⬇ Download</button>' +
+        '<button onclick="document.getElementById(\'restore-input\').click()" style="padding:7px 14px;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;border:1px solid var(--border);background:var(--bg3);color:var(--text2);font-family:var(--sans);">⬆ Restore</button>' +
+      '</div>' +
+    '</div>' +
+
+    '<div style="font-size:11px;color:var(--text3);letter-spacing:0.15em;text-transform:uppercase;padding:14px 0 6px;">Account</div>' +
+    '<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;">' +
+      '<div style="display:flex;align-items:center;gap:10px;">' +
+        '<div id="m-avatar" style="width:34px;height:34px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#fff;flex-shrink:0;">?</div>' +
+        '<div><div id="m-email" style="font-size:12px;color:var(--text2);font-weight:500;">Not signed in</div>' +
+        '<div id="m-sync" style="font-size:11px;color:var(--text3);margin-top:2px;">—</div></div>' +
+      '</div>' +
+      '<button onclick="authSignOut()" style="padding:7px 14px;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;background:rgba(231,76,60,0.12);color:var(--red);border:1px solid rgba(231,76,60,0.25);font-family:var(--sans);white-space:nowrap;">↩ Sign Out</button>' +
+    '</div>';
+  document.body.appendChild(sheet);
+
+  /* Mode toggles */
+  sheet.querySelectorAll('.m-tog').forEach(function(b){
+    b.addEventListener('click', function(){
+      var mode = this.dataset.mode;
+      document.body.classList.remove('light','bloomberg');
+      if(mode==='light') document.body.classList.add('light');
+      if(mode==='bloomberg') document.body.classList.add('bloomberg');
+      localStorage.setItem('exec_mode', mode);
+      sheet.querySelectorAll('.m-tog').forEach(function(x){
+        var on = x.dataset.mode === mode;
+        x.style.background = on ? 'var(--bg4)' : 'none';
+        x.style.color = on ? 'var(--text)' : 'var(--text3)';
+      });
+      /* Keep desktop panel in sync */
+      document.querySelectorAll('#mode-toggle .settings-toggle-btn').forEach(function(x){
+        x.classList.toggle('active', x.dataset.mode === mode);
+      });
+    });
+  });
+
+  /* Accent swatches */
+  sheet.querySelectorAll('.m-sw').forEach(function(sw){
+    sw.addEventListener('click', function(){
+      var c = this.dataset.c, c2 = this.dataset.c2;
+      document.documentElement.style.setProperty('--accent', c);
+      document.documentElement.style.setProperty('--accent2', c2);
+      localStorage.setItem('exec_accent', c);
+      localStorage.setItem('exec_accent2', c2);
+      sheet.querySelectorAll('.m-sw').forEach(function(x){
+        x.style.boxShadow = x.dataset.c === c ? '0 0 0 2px var(--bg2),0 0 0 4px var(--text2)' : 'none';
+      });
+      document.querySelectorAll('.swatch').forEach(function(x){
+        x.classList.toggle('active', x.dataset.color === c);
+      });
+    });
+  });
+
+  function openMobileSheet(){
+    /* Sync current mode */
+    var mode = localStorage.getItem('exec_mode') || 'dark';
+    var accent = localStorage.getItem('exec_accent') || '#7c6aff';
+    sheet.querySelectorAll('.m-tog').forEach(function(x){
+      var on = x.dataset.mode === mode;
+      x.style.background = on ? 'var(--bg4)' : 'none';
+      x.style.color = on ? 'var(--text)' : 'var(--text3)';
+    });
+    sheet.querySelectorAll('.m-sw').forEach(function(x){
+      x.style.boxShadow = x.dataset.c === accent ? '0 0 0 2px var(--bg2),0 0 0 4px var(--text2)' : 'none';
+    });
+    /* Sync account info */
+    if(typeof supabase !== 'undefined' && supabase){
+      supabase.auth.getUser().then(function(r){
+        if(r.data && r.data.user){
+          var em = r.data.user.email || '';
+          document.getElementById('m-email').textContent = em;
+          document.getElementById('m-avatar').textContent = em ? em[0].toUpperCase() : '?';
+          document.getElementById('m-sync').textContent = '● synced';
+          document.getElementById('m-sync').style.color = 'var(--green)';
+        }
+      });
+    }
+    scrim.style.display = 'block';
+    sheet.style.display = 'block';
   }
+
+  function closeMobileSheet(){
+    scrim.style.display = 'none';
+    sheet.style.display = 'none';
+  }
+  window.closeMobileSheet = closeMobileSheet;
+
+  /* Wire settings button */
+  var settingsBtn = document.getElementById('settings-btn-main');
+  if(settingsBtn){
+    settingsBtn.onclick = function(e){ e.stopPropagation(); openMobileSheet(); };
+  }
+
 })();
-/* Keep mobile nav in sync when desktop tabs are clicked */
-function syncMobileNav(sectionId) {
-  const map = {dashboard:'mnav-dashboard', braindump:'mnav-braindump', tasks:'mnav-tasks', focus:'mnav-focus', notes:'mnav-notes'};
-  document.querySelectorAll('.m-nav-item').forEach(b => b.classList.remove('active'));
-  if (map[sectionId]) {
-    const el = document.getElementById(map[sectionId]);
-    if (el) el.classList.add('active');
-  }
-}
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
