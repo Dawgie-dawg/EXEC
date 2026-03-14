@@ -3191,6 +3191,8 @@ setInterval(async () => {
   });
 
   function openMobileSheet(){
+    document.documentElement.style.background = 'red';
+    alert('openMobileSheet called, sheet=' + (sheet ? 'exists' : 'NULL') + ' scrim=' + (scrim ? 'exists' : 'NULL'));
     scrollCont.scrollTop = 0;
     /* Sync current mode */
     var mode = localStorage.getItem('exec_mode') || 'dark';
