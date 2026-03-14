@@ -964,12 +964,20 @@ async function _pushToSupabase() {
       updated_at: new Date().toISOString()
     }, { onConflict: 'user_id' });
     if (error) {
-      console.error('[EXEC] Save error:', error);
-      setSyncDot('error');
+      console.error('[EXEC] Save error:', error.message);
+      console.log('[EXEC] Setting pending_sync flag');
+      localStorage.setItem('exec_pending_sync', '1');
+      setSyncDot('offline');
     } else {
+      console.log('[EXEC] Saved ✅');
+      localStorage.removeItem('exec_pending_sync');
       setSyncDot('');
     }
-  } catch(e) { setSyncDot('error'); }
+  } catch(e) {
+    console.log('[EXEC] Save catch - setting pending_sync:', e.message);
+    localStorage.setItem('exec_pending_sync', '1');
+    setSyncDot('offline');
+  }
 }
 
 // ── Load from Supabase ──
