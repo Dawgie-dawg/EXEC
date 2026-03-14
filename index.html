@@ -2893,7 +2893,7 @@ function _showOfflineBanner() {
   const b = document.createElement('div');
   b.id = 'offline-banner';
   b.style.cssText = 'position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:var(--bg3);border:1px solid var(--border2);color:var(--text2);font-size:13px;font-family:var(--sans);padding:10px 20px;border-radius:8px;z-index:9999;display:flex;align-items:center;gap:8px;box-shadow:0 4px 20px rgba(0,0,0,0.3)';
-  b.innerHTML = '<span style="width:8px;height:8px;border-radius:50%;background:#636363;flex-shrink:0;display:inline-block"></span>You're offline — changes saved locally';
+  b.innerHTML = "<span style=\"width:8px;height:8px;border-radius:50%;background:#636363;flex-shrink:0;display:inline-block\"></span>Offline - changes saved locally";
   document.body.appendChild(b);
 }
 
@@ -2916,4 +2916,4 @@ if ('serviceWorker' in navigator) {
 
 </script>
 </body>
-</html>    
+</html>
