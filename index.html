@@ -442,7 +442,7 @@
     <div id="sync-dot" style="width:6px;height:6px;border-radius:50%;background:var(--green);flex-shrink:0;display:none"></div>
     <button id="undo-btn" class="settings-btn" onclick="undo()" title="Undo (Ctrl+Z)" disabled style="font-size:13px">↩</button>
     <button id="redo-btn" class="settings-btn" onclick="redo()" title="Redo (Ctrl+Y)" disabled style="font-size:13px">↪</button><button class="quick-add-btn" onclick="openQuickAdd()"><span class="quick-add-icon">⚡</span> Quick Add</button>
-    <button class="settings-btn" id="settings-btn-main" onclick="openSettings()" title="Settings">⚙</button>
+    <button class="settings-btn" id="settings-btn-main" onclick="('ontouchstart' in window||navigator.maxTouchPoints>0)?openMobileSheet():openSettings()" title="Settings">⚙</button>
   </div>
 </nav>
 <!-- SUB-NAV TABS -->
@@ -3102,13 +3102,13 @@ setInterval(async () => {
   /* 3. Mobile settings sheet */
   var scrim = document.createElement('div');
   scrim.id = 'm-scrim';
-  scrim.style.cssText = 'display:none;position:absolute;inset:0;background:rgba(0,0,0,0.6);z-index:100;';
+  scrim.style.cssText = 'display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:1000;';
   scrim.onclick = closeMobileSheet;
   wrapper.appendChild(scrim);
 
   var sheet = document.createElement('div');
   sheet.id = 'm-sheet';
-  sheet.style.cssText = 'display:none;position:absolute;bottom:0;left:0;right:0;background:var(--bg2);border-top:1px solid var(--border2);border-radius:20px 20px 0 0;z-index:101;padding:14px 20px 36px;max-height:85vh;overflow-y:auto;-webkit-overflow-scrolling:touch;';
+  sheet.style.cssText = 'display:none;position:fixed;bottom:0;left:0;right:0;background:var(--bg2);border-top:1px solid var(--border2);border-radius:20px 20px 0 0;z-index:1001;padding:14px 20px 36px;max-height:85vh;overflow-y:auto;-webkit-overflow-scrolling:touch;';
   sheet.innerHTML =
     '<div style="width:36px;height:4px;background:var(--border2);border-radius:2px;margin:0 auto 16px;"></div>' +
     '<div style="font-size:13px;font-weight:700;color:var(--text);letter-spacing:1px;margin-bottom:14px;">⚙ SETTINGS</div>' +
@@ -3191,6 +3191,7 @@ setInterval(async () => {
   });
 
   function openMobileSheet(){
+    scrollCont.scrollTop = 0;
     /* Sync current mode */
     var mode = localStorage.getItem('exec_mode') || 'dark';
     var accent = localStorage.getItem('exec_accent') || '#7c6aff';
@@ -3222,10 +3223,9 @@ setInterval(async () => {
     scrim.style.display = 'none';
     sheet.style.display = 'none';
   }
-  window.closeMobileSheet = closeMobileSheet;
+  window.openMobileSheet = openMobileSheet;
 
-  /* Override openSettings globally so the button's onclick="openSettings()" calls our sheet instead */
-  window.openSettings = function() { openMobileSheet(); };
+  /* openSettings is called via onclick - button handles routing directly */
 
 })();
 
