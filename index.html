@@ -35,8 +35,13 @@
 #sync-dot.syncing{background:var(--orange);}
 #sync-dot.error{background:var(--red);}
 
+/* ── Safari fix: overflow:hidden on body kills position:fixed ── */
+@media (max-width:820px){
+  body{overflow:auto !important;}
+  #scroll-container{position:relative !important;top:auto !important;left:auto !important;right:auto !important;bottom:auto !important;overflow:visible !important;height:auto !important;}
+}
 /* ── Mobile UI ── */
-@media (max-width:768px){
+@media (max-width:820px){
   /* Hide desktop nav elements */
   .nav-metrics{display:none;}
   .sub-nav{display:none;}
@@ -567,7 +572,7 @@
     <div id="sync-dot" style="width:6px;height:6px;border-radius:50%;background:var(--green);flex-shrink:0;display:none"></div>
     <button id="undo-btn" class="settings-btn" onclick="undo()" title="Undo (Ctrl+Z)" disabled style="font-size:13px">↩</button>
     <button id="redo-btn" class="settings-btn" onclick="redo()" title="Redo (Ctrl+Y)" disabled style="font-size:13px">↪</button><button class="quick-add-btn" onclick="openQuickAdd()"><span class="quick-add-icon">⚡</span> Quick Add</button>
-    <button class="settings-btn" onclick="openSettings()" title="Settings">⚙</button>
+    <button class="settings-btn" onclick="if(window.innerWidth<=820){openMobileSettings()}else{openSettings()}" title="Settings">⚙</button>
   </div>
 </nav>
 <!-- SUB-NAV TABS -->
@@ -3239,7 +3244,7 @@ function mobileSetAccent(color, color2, el) {
   const settingsBtn = document.querySelector('.settings-btn[onclick="openSettings()"]');
   if (settingsBtn) {
     settingsBtn.addEventListener('click', function(e) {
-      if (window.innerWidth <= 768) {
+      if (window.innerWidth <= 820) {
         e.stopImmediatePropagation();
         openMobileSettings();
       }
