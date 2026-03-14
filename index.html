@@ -3216,13 +3216,10 @@ setInterval(async () => {
     sheet.style.cssText = 'display:block;position:fixed;bottom:0;left:0;right:0;background:var(--bg2);border-top:1px solid var(--border2);border-radius:20px 20px 0 0;z-index:99999;padding:14px 20px 36px;max-height:85vh;overflow-y:auto;-webkit-overflow-scrolling:touch;';
     scrim.style.display = 'block';
   }
-    scrim.style.display = 'block';
-    sheet.style.display = 'block';
-  }
 
   function closeMobileSheet(){
     scrim.style.display = 'none';
-    sheet.style.display = 'none';
+    sheet.style.cssText = 'display:none;position:fixed;bottom:0;left:0;right:0;background:var(--bg2);border-top:1px solid var(--border2);border-radius:20px 20px 0 0;z-index:99999;padding:14px 20px 36px;max-height:85vh;overflow-y:auto;-webkit-overflow-scrolling:touch;';
   }
   window.openMobileSheet = openMobileSheet;
 
