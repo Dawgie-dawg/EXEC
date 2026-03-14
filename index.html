@@ -1639,8 +1639,8 @@ list.innerHTML = html;
 }
 } else {
 const t5ids   = getTodays5();
-const overdue = active.filter(t => isOverdue(t.due));
-const todayPinned = active.filter(t => t5ids.includes(t.id) && !isOverdue(t.due));
+const todayPinned = active.filter(t => t5ids.includes(t.id));
+const overdue = active.filter(t => isOverdue(t.due) && !t5ids.includes(t.id));
 const todayDue = active.filter(t => t.due === today() && !t5ids.includes(t.id) && !isOverdue(t.due));
 const upcoming = active.filter(t => t.due && t.due > today() && !t5ids.includes(t.id) && !isOverdue(t.due));
 const noDate   = active.filter(t => !t.due && !t5ids.includes(t.id));
@@ -1670,8 +1670,8 @@ html = active.length
 ? `<div class="task-group">${sortGroup(active).map(t => taskRowHTML(t)).join('')}</div>`
 : '<div class="empty-state"><div class="empty-state-icon">✅</div>No tasks here.</div>';
 } else {
-if (overdue.length)     html += renderGroup('overdue',  '🔴', 'OVERDUE',    sortGroup(overdue),     'var(--red)',    true);
 if (todayPinned.length) html += renderGroup('today5',   '★',  "TODAY'S 5",  sortGroup(todayPinned), 'var(--accent)', true);
+if (overdue.length)     html += renderGroup('overdue',  '🔴', 'OVERDUE',    sortGroup(overdue),     'var(--red)',    true);
 if (todayDue.length)    html += renderGroup('todaydue', '📅', 'DUE TODAY',  sortGroup(todayDue),    'var(--orange)', true);
 if (upcoming.length)    html += renderGroup('upcoming', '🗓', 'UPCOMING',   sortGroup(upcoming),    'var(--accent)', false);
 if (noDate.length)      html += renderGroup('nodate',   '·',  'NO DATE',    sortGroup(noDate),      'var(--text3)',  false);
@@ -3224,11 +3224,13 @@ setInterval(async () => {
   }
   window.closeMobileSheet = closeMobileSheet;
 
-  /* Wire settings button */
-  var settingsBtn = document.getElementById('settings-btn-main');
-  if(settingsBtn){
-    settingsBtn.onclick = function(e){ e.stopPropagation(); openMobileSheet(); };
-  }
+  /* Wire settings button - must wait for DOM */
+  window.addEventListener('load', function() {
+    var settingsBtn = document.getElementById('settings-btn-main');
+    if(settingsBtn){
+      settingsBtn.onclick = function(e){ e.stopPropagation(); openMobileSheet(); };
+    }
+  });
 
 })();
 
