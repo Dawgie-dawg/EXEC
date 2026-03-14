@@ -666,6 +666,7 @@ if (_bc) {
 function save() {
   localStorage.setItem('exec_state', JSON.stringify(state));
   if (_bc) _bc.postMessage({ type: 'state_update', tabId: _tabId, state: JSON.stringify(state) });
+  console.log('[EXEC] SAVE: user='+ (_currentUser ? _currentUser.email : 'NONE') + ' online='+navigator.onLine);
   if (!_currentUser) return;
   clearTimeout(_saveTimer);
   setSyncDot('syncing');
@@ -675,12 +676,13 @@ function save() {
 async function _pushToSupabase() {
   if (!_currentUser) return;
   if (!navigator.onLine) {
-    console.log('[EXEC] Offline — queuing save for later');
+    console.log('[EXEC] PUSH: offline, queuing. pending flag set.');
     _saveQueue = true;
     localStorage.setItem('exec_pending_sync', '1');
     setSyncDot('offline');
     return;
   }
+  console.log('[EXEC] PUSH: online, sending to Supabase...');
   try {
     const payload = {
       user_id: _currentUser.id,
@@ -1019,9 +1021,9 @@ _supa.auth.onAuthStateChange(async (event, session) => {
       // Delay load slightly to let auth lock settle
       setTimeout(async () => {
         const pending = localStorage.getItem('exec_pending_sync');
+        console.log('[EXEC] BOOT: pending='+pending+' user='+session.user.email);
         if (pending) {
-          // We have offline changes — push them first, THEN subscribe to realtime
-          console.log('[EXEC] Found pending offline changes — pushing before loading cloud');
+          console.log('[EXEC] BOOT: pushing offline changes first');
           load(); // load our offline localStorage state
           refreshAllViews();
           await _pushToSupabase();
@@ -2900,7 +2902,7 @@ function _updateOnlineStatus() {
     _hideOfflineBanner();
     const pending = localStorage.getItem('exec_pending_sync');
     if ((wasOffline || pending) && _currentUser) {
-      console.log('[EXEC] Back online — pushing offline changes first');
+      console.log('[EXEC] ONLINE: wasOffline='+wasOffline+' pending='+pending);
       _saveQueue = false;
       localStorage.removeItem('exec_pending_sync');
       // Push our offline changes FIRST, then let realtime handle other devices
