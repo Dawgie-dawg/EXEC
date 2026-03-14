@@ -1177,16 +1177,20 @@ function getCookie(name) {
   var match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
   return match ? decodeURIComponent(match[2]) : null;
 }
+function applyAccent() {
+  var accent = localStorage.getItem('exec_accent') || sessionStorage.getItem('exec_accent') || getCookie('exec_accent') || '#7c6aff';
+  var accent2 = localStorage.getItem('exec_accent2') || sessionStorage.getItem('exec_accent2') || getCookie('exec_accent2') || '#5c4adf';
+  document.documentElement.style.setProperty('--accent', accent);
+  document.documentElement.style.setProperty('--accent2', accent2);
+  var accentTxt = accentTextColor(accent);
+  document.documentElement.style.setProperty('--accent-text', accentTxt);
+  document.documentElement.style.setProperty('--emoji-filter', accentTxt === '#111111' ? 'grayscale(1) brightness(0)' : 'none');
+}
 const mode = localStorage.getItem('exec_mode') || sessionStorage.getItem('exec_mode') || getCookie('exec_mode');
 if (mode === 'light') document.body.classList.add('light');
 if (mode === 'bloomberg') document.body.classList.add('bloomberg');
-const accent = localStorage.getItem('exec_accent') || sessionStorage.getItem('exec_accent') || getCookie('exec_accent') || '#7c6aff';
-const accent2 = localStorage.getItem('exec_accent2') || sessionStorage.getItem('exec_accent2') || getCookie('exec_accent2') || '#5c4adf';
-document.documentElement.style.setProperty('--accent', accent);
-document.documentElement.style.setProperty('--accent2', accent2);
-const accentTxt = accentTextColor(accent);
-document.documentElement.style.setProperty('--accent-text', accentTxt);
-document.documentElement.style.setProperty('--emoji-filter', accentTxt === '#111111' ? 'grayscale(1) brightness(0)' : 'none');
+applyAccent();
+window._applyAccent = applyAccent;
 })();
 load();
 let currentFilter = 'all', currentSort = 'priority', noteFilter = 'all', taskView = 'grouped';
@@ -2989,7 +2993,8 @@ setInterval(async () => {
 
   /* Rewrite body layout for Safari fixed positioning */
   document.body.style.cssText = 'overflow:hidden;height:100%;width:100%;position:fixed;top:0;left:0;right:0;bottom:0;';
-  document.documentElement.style.cssText = 'height:100%;overflow:hidden;';
+  document.documentElement.style.height = '100%';
+  document.documentElement.style.overflow = 'hidden';
 
   var wrapper = document.createElement('div');
   wrapper.id = 'mobile-wrapper';
