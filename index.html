@@ -442,7 +442,7 @@
     <div id="sync-dot" style="width:6px;height:6px;border-radius:50%;background:var(--green);flex-shrink:0;display:none"></div>
     <button id="undo-btn" class="settings-btn" onclick="undo()" title="Undo (Ctrl+Z)" disabled style="font-size:13px">↩</button>
     <button id="redo-btn" class="settings-btn" onclick="redo()" title="Redo (Ctrl+Y)" disabled style="font-size:13px">↪</button><button class="quick-add-btn" onclick="openQuickAdd()"><span class="quick-add-icon">⚡</span> Quick Add</button>
-    <button class="settings-btn" id="settings-btn-main" onclick="('ontouchstart' in window||navigator.maxTouchPoints>0)?openMobileSheet():openSettings()" title="Settings">⚙</button>
+    <button class="settings-btn" id="settings-btn-main" onclick="alert('tap'); ('ontouchstart' in window||navigator.maxTouchPoints>0)?openMobileSheet():openSettings()" title="Settings">⚙</button>
   </div>
 </nav>
 <!-- SUB-NAV TABS -->
