@@ -2984,7 +2984,7 @@ setInterval(async () => {
   /* Create a full-screen flex wrapper */
   var wrapper = document.createElement('div');
   wrapper.id = 'mobile-wrapper';
-  wrapper.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;display:flex;flex-direction:column;background:var(--bg);z-index:0;';
+  wrapper.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;display:flex;flex-direction:column;background:var(--bg);z-index:1;';
 
   /* Move nav into wrapper */
   var nav = document.querySelector('nav');
@@ -3102,13 +3102,13 @@ setInterval(async () => {
   /* 3. Mobile settings sheet */
   var scrim = document.createElement('div');
   scrim.id = 'm-scrim';
-  scrim.style.cssText = 'display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:1998;';
+  scrim.style.cssText = 'display:none;position:absolute;inset:0;background:rgba(0,0,0,0.6);z-index:100;';
   scrim.onclick = closeMobileSheet;
-  document.body.appendChild(scrim);
+  wrapper.appendChild(scrim);
 
   var sheet = document.createElement('div');
   sheet.id = 'm-sheet';
-  sheet.style.cssText = 'display:none;position:fixed;bottom:0;left:0;right:0;background:var(--bg2);border-top:1px solid var(--border2);border-radius:20px 20px 0 0;z-index:1999;padding:14px 20px 36px;max-height:85vh;overflow-y:auto;-webkit-overflow-scrolling:touch;';
+  sheet.style.cssText = 'display:none;position:absolute;bottom:0;left:0;right:0;background:var(--bg2);border-top:1px solid var(--border2);border-radius:20px 20px 0 0;z-index:101;padding:14px 20px 36px;max-height:85vh;overflow-y:auto;-webkit-overflow-scrolling:touch;';
   sheet.innerHTML =
     '<div style="width:36px;height:4px;background:var(--border2);border-radius:2px;margin:0 auto 16px;"></div>' +
     '<div style="font-size:13px;font-weight:700;color:var(--text);letter-spacing:1px;margin-bottom:14px;">⚙ SETTINGS</div>' +
@@ -3151,7 +3151,7 @@ setInterval(async () => {
       '</div>' +
       '<button onclick="authSignOut()" style="padding:7px 14px;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;background:rgba(231,76,60,0.12);color:var(--red);border:1px solid rgba(231,76,60,0.25);font-family:var(--sans);white-space:nowrap;">↩ Sign Out</button>' +
     '</div>';
-  document.body.appendChild(sheet);
+  wrapper.appendChild(sheet);
 
   /* Mode toggles */
   sheet.querySelectorAll('.m-tog').forEach(function(b){
