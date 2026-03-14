@@ -2946,6 +2946,27 @@ function _hideOfflineBanner() {
 window.addEventListener('online', _updateOnlineStatus);
 window.addEventListener('offline', _updateOnlineStatus);
 
+// Polling fallback — airplane mode doesn't always fire the 'online' event
+setInterval(async () => {
+  const pending = localStorage.getItem('exec_pending_sync');
+  if (!pending || !_currentUser) return;
+  // Try a lightweight fetch to check if we're really online
+  try {
+    await fetch('https://wqfeojepimkvlwdqnqfr.supabase.co/rest/v1/', { 
+      method: 'HEAD',
+      signal: AbortSignal.timeout(3000)
+    });
+    // If we get here, we're online — push pending changes
+    console.log('[EXEC] POLL: back online, pushing pending changes');
+    _isOnline = true;
+    _hideOfflineBanner();
+    localStorage.removeItem('exec_pending_sync');
+    await _pushToSupabase();
+  } catch(e) {
+    // Still offline, keep waiting
+  }
+}, 5000);
+
 // ── Service Worker registration ──
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
