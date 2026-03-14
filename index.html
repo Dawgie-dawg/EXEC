@@ -647,6 +647,7 @@ const SUPA_KEY = 'sb_publishable_wkmOvKCiq5RHthy5EfR7TA_VhT-AlQo';
 const _supa = supabase.createClient(SUPA_URL, SUPA_KEY);
 let _currentUser = null;
 let _saveTimer = null;
+let _booted = false;
 
 // ── Multi-tab sync via BroadcastChannel ──
 const _tabId = Math.random().toString(36).slice(2);
@@ -879,6 +880,7 @@ async function authSignOut() {
   closeSettings();
   await _supa.auth.signOut();
   _currentUser = null;
+  _booted = false;
   const sd = document.getElementById('sync-dot');
   if (sd) sd.style.display = 'none';
   const se = document.getElementById('settings-user-email');
@@ -1018,18 +1020,21 @@ _supa.auth.onAuthStateChange(async (event, session) => {
 
     // Only load data on these events — not on every token refresh
     if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN') {
-      // Delay load slightly to let auth lock settle
+      // Only boot once — Supabase fires SIGNED_IN repeatedly on token refresh
+      if (_booted) { console.log('[EXEC] Skipping repeated auth event:', event); return; }
+      _booted = true;
       setTimeout(async () => {
         const pending = localStorage.getItem('exec_pending_sync');
         console.log('[EXEC] BOOT: pending='+pending+' user='+session.user.email);
         if (pending) {
+          // Offline changes exist — push them, don't overwrite with cloud data
           console.log('[EXEC] BOOT: pushing offline changes first');
-          load(); // load our offline localStorage state
+          load();
           refreshAllViews();
           await _pushToSupabase();
           localStorage.removeItem('exec_pending_sync');
         } else {
-          // No offline changes — safe to load from cloud
+          // No offline changes — load fresh from cloud
           const loaded = await loadFromSupabase(session.user.id, true);
           if (!loaded) load();
           refreshAllViews();
