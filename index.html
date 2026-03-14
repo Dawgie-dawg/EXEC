@@ -1018,9 +1018,20 @@ _supa.auth.onAuthStateChange(async (event, session) => {
     if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN') {
       // Delay load slightly to let auth lock settle
       setTimeout(async () => {
-        const loaded = await loadFromSupabase(session.user.id, true);
-        if (!loaded) load();
-        refreshAllViews();
+        const pending = localStorage.getItem('exec_pending_sync');
+        if (pending) {
+          // We have offline changes — push them first, THEN subscribe to realtime
+          console.log('[EXEC] Found pending offline changes — pushing before loading cloud');
+          load(); // load our offline localStorage state
+          refreshAllViews();
+          await _pushToSupabase();
+          localStorage.removeItem('exec_pending_sync');
+        } else {
+          // No offline changes — safe to load from cloud
+          const loaded = await loadFromSupabase(session.user.id, true);
+          if (!loaded) load();
+          refreshAllViews();
+        }
         _subscribeRealtime(session.user.id);
       }, 800);
     }
@@ -2889,9 +2900,10 @@ function _updateOnlineStatus() {
     _hideOfflineBanner();
     const pending = localStorage.getItem('exec_pending_sync');
     if ((wasOffline || pending) && _currentUser) {
-      console.log('[EXEC] Back online — flushing save queue');
+      console.log('[EXEC] Back online — pushing offline changes first');
       _saveQueue = false;
       localStorage.removeItem('exec_pending_sync');
+      // Push our offline changes FIRST, then let realtime handle other devices
       _pushToSupabase();
     }
   }
