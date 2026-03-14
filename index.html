@@ -666,7 +666,6 @@ if (_bc) {
 function save() {
   localStorage.setItem('exec_state', JSON.stringify(state));
   if (_bc) _bc.postMessage({ type: 'state_update', tabId: _tabId, state: JSON.stringify(state) });
-  console.log('[EXEC] save() called, user:', _currentUser ? _currentUser.email : 'NOT LOGGED IN');
   if (!_currentUser) return;
   clearTimeout(_saveTimer);
   setSyncDot('syncing');
@@ -708,15 +707,15 @@ async function _pushToSupabase() {
 }
 
 // ── Load ──
-async function loadFromSupabase(userId) {
+async function loadFromSupabase(userId, fallbackToLocal) {
   try {
     console.log('[EXEC] Loading...');
     const { data, error } = await _supa.from('app_state').select('*').eq('user_id', userId).maybeSingle();
     if (error) {
       console.error('[EXEC] Load error:', error.message);
-      // Offline or error — load from localStorage cache
-      load();
-      return true;
+      // Only fall back to localStorage on initial boot, not realtime updates
+      if (fallbackToLocal) { load(); return true; }
+      return false;
     }
     if (!data) { console.log('[EXEC] No cloud data yet'); return false; }
     state.tasks            = data.tasks            || [];
@@ -750,8 +749,8 @@ function _subscribeRealtime(userId) {
       filter: `user_id=eq.${userId}`
     }, async (payload) => {
       console.log('[EXEC] Realtime update received');
-      // Another device saved — pull latest
-      const loaded = await loadFromSupabase(userId);
+      // Another device saved — pull latest (no localStorage fallback)
+      const loaded = await loadFromSupabase(userId, false);
       if (loaded) refreshAllViews();
     })
     .subscribe((status) => {
@@ -1019,7 +1018,7 @@ _supa.auth.onAuthStateChange(async (event, session) => {
     if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN') {
       // Delay load slightly to let auth lock settle
       setTimeout(async () => {
-        const loaded = await loadFromSupabase(session.user.id);
+        const loaded = await loadFromSupabase(session.user.id, true);
         if (!loaded) load();
         refreshAllViews();
         _subscribeRealtime(session.user.id);
