@@ -3108,7 +3108,7 @@ setInterval(async () => {
 
   var sheet = document.createElement('div');
   sheet.id = 'm-sheet';
-  sheet.style.cssText = 'display:none;position:fixed;bottom:0;left:0;right:0;background:var(--bg2);border-top:1px solid var(--border2);border-radius:20px 20px 0 0;z-index:99999;padding:14px 20px 36px;max-height:85vh;overflow-y:auto;-webkit-overflow-scrolling:touch;';
+  sheet.style.cssText = 'display:none;position:fixed;bottom:0;left:0;right:0;background:#0f0f0f;border-top:1px solid #3d3d3d;border-radius:20px 20px 0 0;z-index:99999;padding:14px 20px 36px;max-height:85vh;overflow-y:auto;-webkit-overflow-scrolling:touch;color:#f2f2f2;';
   sheet.innerHTML =
     '<div style="width:36px;height:4px;background:var(--border2);border-radius:2px;margin:0 auto 16px;"></div>' +
     '<div style="font-size:13px;font-weight:700;color:var(--text);letter-spacing:1px;margin-bottom:14px;">⚙ SETTINGS</div>' +
@@ -3213,13 +3213,13 @@ setInterval(async () => {
         }
       });
     }
-    sheet.style.cssText = 'display:block;position:fixed;bottom:0;left:0;right:0;background:var(--bg2);border-top:1px solid var(--border2);border-radius:20px 20px 0 0;z-index:99999;padding:14px 20px 36px;max-height:85vh;overflow-y:auto;-webkit-overflow-scrolling:touch;';
+    sheet.style.cssText = 'display:block;position:fixed;bottom:0;left:0;right:0;background:#0f0f0f;border-top:1px solid #3d3d3d;border-radius:20px 20px 0 0;z-index:99999;padding:14px 20px 36px;max-height:85vh;overflow-y:auto;-webkit-overflow-scrolling:touch;color:#f2f2f2;';
     scrim.style.display = 'block';
   }
 
   function closeMobileSheet(){
     scrim.style.display = 'none';
-    sheet.style.cssText = 'display:none;position:fixed;bottom:0;left:0;right:0;background:var(--bg2);border-top:1px solid var(--border2);border-radius:20px 20px 0 0;z-index:99999;padding:14px 20px 36px;max-height:85vh;overflow-y:auto;-webkit-overflow-scrolling:touch;';
+    sheet.style.cssText = 'display:none;position:fixed;bottom:0;left:0;right:0;background:#0f0f0f;border-top:1px solid #3d3d3d;border-radius:20px 20px 0 0;z-index:99999;padding:14px 20px 36px;max-height:85vh;overflow-y:auto;-webkit-overflow-scrolling:touch;color:#f2f2f2;';
   }
   window.openMobileSheet = openMobileSheet;
 
