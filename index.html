@@ -705,6 +705,7 @@ async function _pushToSupabase() {
       todays5: state.todays5 || {},
       checklist_state: state.checklistState || {},
       day_themes: state.dayThemes || {},
+      prefs: { mode: localStorage.getItem('exec_mode')||'dark', accent: localStorage.getItem('exec_accent')||'#7c6aff', accent2: localStorage.getItem('exec_accent2')||'#5c4adf' },
       updated_at: new Date().toISOString()
     };
     const { error } = await _supa.from('app_state').upsert(payload, { onConflict: 'user_id' });
@@ -750,6 +751,15 @@ async function loadFromSupabase(userId, fallbackToLocal) {
     state.todays5          = data.todays5           || {};
     state.checklistState   = data.checklist_state   || {};
     state.dayThemes        = data.day_themes        || {};
+    if (data.prefs) {
+      if (data.prefs.mode)    { localStorage.setItem('exec_mode',    data.prefs.mode);    }
+      if (data.prefs.accent)  { localStorage.setItem('exec_accent',  data.prefs.accent);  }
+      if (data.prefs.accent2) { localStorage.setItem('exec_accent2', data.prefs.accent2); }
+      document.body.classList.toggle('light',     data.prefs.mode === 'light');
+      document.body.classList.toggle('bloomberg', data.prefs.mode === 'bloomberg');
+      if (data.prefs.accent)  document.documentElement.style.setProperty('--accent',  data.prefs.accent);
+      if (data.prefs.accent2) document.documentElement.style.setProperty('--accent2', data.prefs.accent2);
+    }
     // Cache cloud data to localStorage so it's available offline
     localStorage.setItem('exec_state', JSON.stringify(state));
     // Update sync status in settings
@@ -966,6 +976,7 @@ async function _pushToSupabase() {
       todays5: state.todays5 || {},
       checklist_state: state.checklistState || {},
       day_themes: state.dayThemes || {},
+      prefs: { mode: localStorage.getItem('exec_mode')||'dark', accent: localStorage.getItem('exec_accent')||'#7c6aff', accent2: localStorage.getItem('exec_accent2')||'#5c4adf' },
       updated_at: new Date().toISOString()
     }, { onConflict: 'user_id' });
     if (error) {
@@ -1003,7 +1014,16 @@ async function loadFromSupabase(userId) {
     state.todays5          = data.todays5           || {};
     state.checklistState   = data.checklist_state   || {};
     state.dayThemes        = data.day_themes        || {};
-    return true;
+    state.dayThemes        = data.day_themes        || {};
+    if (data.prefs) {
+      if (data.prefs.mode)    { localStorage.setItem('exec_mode',    data.prefs.mode);    }
+      if (data.prefs.accent)  { localStorage.setItem('exec_accent',  data.prefs.accent);  }
+      if (data.prefs.accent2) { localStorage.setItem('exec_accent2', data.prefs.accent2); }
+      document.body.classList.toggle('light',     data.prefs.mode === 'light');
+      document.body.classList.toggle('bloomberg', data.prefs.mode === 'bloomberg');
+      if (data.prefs.accent)  document.documentElement.style.setProperty('--accent',  data.prefs.accent);
+      if (data.prefs.accent2) document.documentElement.style.setProperty('--accent2', data.prefs.accent2);
+    }
   } catch(e) { console.error('[EXEC] Load exception:', e); return false; }
 }
 
