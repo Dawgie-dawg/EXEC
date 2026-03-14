@@ -678,7 +678,8 @@ async function _pushToSupabase() {
   if (!navigator.onLine) {
     console.log('[EXEC] Offline — queuing save for later');
     _saveQueue = true;
-    setSyncDot('');
+    localStorage.setItem('exec_pending_sync', '1');
+    setSyncDot('offline');
     return;
   }
   try {
@@ -702,7 +703,7 @@ async function _pushToSupabase() {
     };
     const { error } = await _supa.from('app_state').upsert(payload, { onConflict: 'user_id' });
     if (error) { console.error('[EXEC] Save error:', error.message); setSyncDot('error'); }
-    else { console.log('[EXEC] Saved ✅'); setSyncDot(''); }
+    else { console.log('[EXEC] Saved ✅'); localStorage.removeItem('exec_pending_sync'); setSyncDot(''); }
   } catch(e) { console.error('[EXEC] Save exception:', e.message); setSyncDot('error'); }
 }
 
@@ -711,7 +712,12 @@ async function loadFromSupabase(userId) {
   try {
     console.log('[EXEC] Loading...');
     const { data, error } = await _supa.from('app_state').select('*').eq('user_id', userId).maybeSingle();
-    if (error) { console.error('[EXEC] Load error:', error.message); return false; }
+    if (error) {
+      console.error('[EXEC] Load error:', error.message);
+      // Offline or error — load from localStorage cache
+      load();
+      return true;
+    }
     if (!data) { console.log('[EXEC] No cloud data yet'); return false; }
     state.tasks            = data.tasks            || [];
     state.projects         = data.projects         || [];
@@ -728,6 +734,8 @@ async function loadFromSupabase(userId) {
     state.checklistState   = data.checklist_state   || {};
     state.dayThemes        = data.day_themes        || {};
     console.log('[EXEC] Loaded ✅ tasks:', state.tasks.length);
+    // Cache cloud data to localStorage so it's available offline
+    localStorage.setItem('exec_state', JSON.stringify(state));
     return true;
   } catch(e) { console.error('[EXEC] Load exception:', e.message); return false; }
 }
@@ -2880,9 +2888,11 @@ function _updateOnlineStatus() {
     _showOfflineBanner();
   } else {
     _hideOfflineBanner();
-    if (wasOffline && _saveQueue && _currentUser) {
+    const pending = localStorage.getItem('exec_pending_sync');
+    if ((wasOffline || pending) && _currentUser) {
       console.log('[EXEC] Back online — flushing save queue');
       _saveQueue = false;
+      localStorage.removeItem('exec_pending_sync');
       _pushToSupabase();
     }
   }
