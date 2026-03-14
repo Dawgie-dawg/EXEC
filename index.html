@@ -3099,136 +3099,27 @@ setInterval(async () => {
     });
   };
 
-  /* 3. Mobile settings sheet */
-  var scrim = document.createElement('div');
-  scrim.id = 'm-scrim';
-  scrim.style.cssText = 'display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:99998;';
-  scrim.onclick = closeMobileSheet;
-  document.documentElement.appendChild(scrim);
+  /* On mobile, reuse the existing settings overlay as a bottom sheet */
+  var mobileSettingsStyle = document.createElement('style');
+  mobileSettingsStyle.textContent =
+    '#settings-overlay.active{display:flex!important;align-items:flex-end!important;justify-content:stretch!important;padding-top:0!important;}' +
+    '#settings-panel{width:100%!important;max-width:100%!important;margin:0!important;border-radius:20px 20px 0 0!important;max-height:85vh!important;}';
+  document.head.appendChild(mobileSettingsStyle);
 
-  var sheet = document.createElement('div');
-  sheet.id = 'm-sheet';
-  sheet.style.cssText = 'display:none;position:fixed;bottom:0;left:0;right:0;background:#0f0f0f;border-top:1px solid #3d3d3d;border-radius:20px 20px 0 0;z-index:99999;padding:14px 20px 36px;max-height:85vh;overflow-y:auto;-webkit-overflow-scrolling:touch;color:#f2f2f2;';
-  sheet.innerHTML =
-    '<div style="width:36px;height:4px;background:var(--border2);border-radius:2px;margin:0 auto 16px;"></div>' +
-    '<div style="font-size:13px;font-weight:700;color:var(--text);letter-spacing:1px;margin-bottom:14px;">⚙ SETTINGS</div>' +
-
-    '<div style="display:flex;align-items:center;justify-content:space-between;padding:11px 0;border-bottom:1px solid var(--border);">' +
-      '<span style="font-size:13px;color:var(--text2);font-weight:500;">Mode</span>' +
-      '<div style="display:flex;background:var(--bg3);border-radius:6px;padding:2px;gap:2px;" id="m-mode-grp">' +
-        '<button class="m-tog" data-mode="dark" style="padding:5px 12px;border-radius:4px;font-size:11px;font-weight:500;border:none;background:var(--bg4);color:var(--text);cursor:pointer;font-family:var(--sans);">Dark</button>' +
-        '<button class="m-tog" data-mode="light" style="padding:5px 12px;border-radius:4px;font-size:11px;font-weight:500;border:none;background:none;color:var(--text3);cursor:pointer;font-family:var(--sans);">Light</button>' +
-        '<button class="m-tog" data-mode="bloomberg" style="padding:5px 12px;border-radius:4px;font-size:11px;font-weight:500;border:none;background:none;color:var(--text3);cursor:pointer;font-family:var(--sans);">Med</button>' +
-      '</div>' +
-    '</div>' +
-
-    '<div style="display:flex;align-items:center;justify-content:space-between;padding:11px 0;border-bottom:1px solid var(--border);">' +
-      '<span style="font-size:13px;color:var(--text2);font-weight:500;">Accent</span>' +
-      '<div style="display:flex;gap:8px;" id="m-swatch-row">' +
-        '<div class="m-sw" data-c="#7c6aff" data-c2="#5c4adf" style="width:22px;height:22px;border-radius:50%;background:#7c6aff;cursor:pointer;box-shadow:0 0 0 2px var(--bg2),0 0 0 4px var(--text2);"></div>' +
-        '<div class="m-sw" data-c="#00d2d3" data-c2="#00a8a9" style="width:22px;height:22px;border-radius:50%;background:#00d2d3;cursor:pointer;"></div>' +
-        '<div class="m-sw" data-c="#2ecc71" data-c2="#27ae60" style="width:22px;height:22px;border-radius:50%;background:#2ecc71;cursor:pointer;"></div>' +
-        '<div class="m-sw" data-c="#ff6b9d" data-c2="#e0507f" style="width:22px;height:22px;border-radius:50%;background:#ff6b9d;cursor:pointer;"></div>' +
-        '<div class="m-sw" data-c="#f39c12" data-c2="#d68910" style="width:22px;height:22px;border-radius:50%;background:#f39c12;cursor:pointer;"></div>' +
-        '<div class="m-sw" data-c="#3498db" data-c2="#2980b9" style="width:22px;height:22px;border-radius:50%;background:#3498db;cursor:pointer;"></div>' +
-      '</div>' +
-    '</div>' +
-
-    '<div style="display:flex;align-items:center;justify-content:space-between;padding:11px 0;border-bottom:1px solid var(--border);">' +
-      '<span style="font-size:13px;color:var(--text2);font-weight:500;">Backup</span>' +
-      '<div style="display:flex;gap:8px;">' +
-        '<button onclick="saveBackup()" style="padding:7px 14px;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;border:1px solid var(--border);background:var(--bg3);color:var(--text2);font-family:var(--sans);">⬇ Download</button>' +
-        '<button onclick="document.getElementById(\'restore-input\').click()" style="padding:7px 14px;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;border:1px solid var(--border);background:var(--bg3);color:var(--text2);font-family:var(--sans);">⬆ Restore</button>' +
-      '</div>' +
-    '</div>' +
-
-    '<div style="font-size:11px;color:var(--text3);letter-spacing:0.15em;text-transform:uppercase;padding:14px 0 6px;">Account</div>' +
-    '<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;">' +
-      '<div style="display:flex;align-items:center;gap:10px;">' +
-        '<div id="m-avatar" style="width:34px;height:34px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#fff;flex-shrink:0;">?</div>' +
-        '<div><div id="m-email" style="font-size:12px;color:var(--text2);font-weight:500;">Not signed in</div>' +
-        '<div id="m-sync" style="font-size:11px;color:var(--text3);margin-top:2px;">—</div></div>' +
-      '</div>' +
-      '<button onclick="authSignOut()" style="padding:7px 14px;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;background:rgba(231,76,60,0.12);color:var(--red);border:1px solid rgba(231,76,60,0.25);font-family:var(--sans);white-space:nowrap;">↩ Sign Out</button>' +
-    '</div>';
-  document.documentElement.appendChild(sheet);
-
-  /* Mode toggles */
-  sheet.querySelectorAll('.m-tog').forEach(function(b){
-    b.addEventListener('click', function(){
-      var mode = this.dataset.mode;
-      var desktopBtn = document.querySelector('#mode-toggle .settings-toggle-btn[data-mode="'+mode+'"]');
-      if(desktopBtn) setMode(mode, desktopBtn);
-      else {
-        document.body.classList.remove('light','bloomberg');
-        if(mode==='light') document.body.classList.add('light');
-        if(mode==='bloomberg') document.body.classList.add('bloomberg');
-        localStorage.setItem('exec_mode', mode);
+  /* Hide Archive and Danger Zone sections on mobile */
+  document.querySelectorAll('.settings-section-label').forEach(function(el){
+    if(el.textContent.trim() === 'Archive' || el.textContent.trim() === 'Danger Zone') {
+      el.style.display = 'none';
+      var next = el.nextElementSibling;
+      while(next && next.className !== 'settings-section-label') {
+        next.style.display = 'none';
+        next = next.nextElementSibling;
       }
-      sheet.querySelectorAll('.m-tog').forEach(function(x){
-        var on = x.dataset.mode === mode;
-        x.style.background = on ? '#242424' : 'none';
-        x.style.color = on ? '#f2f2f2' : '#a0a0a0';
-      });
-    });
+    }
   });
 
-  /* Accent swatches */
-  sheet.querySelectorAll('.m-sw').forEach(function(sw){
-    sw.addEventListener('click', function(){
-      var c = this.dataset.c, c2 = this.dataset.c2;
-      var desktopSwatch = document.querySelector('.swatch[data-color="'+c+'"]');
-      if(desktopSwatch) setAccent(c, c2, desktopSwatch);
-      else {
-        document.documentElement.style.setProperty('--accent', c);
-        document.documentElement.style.setProperty('--accent2', c2);
-        localStorage.setItem('exec_accent', c);
-        localStorage.setItem('exec_accent2', c2);
-      }
-      sheet.querySelectorAll('.m-sw').forEach(function(x){
-        x.style.boxShadow = x.dataset.c === c ? '0 0 0 2px #0f0f0f,0 0 0 4px #d4d4d4' : 'none';
-      });
-    });
-  });
-
-  function openMobileSheet(){
-    sheet.style.cssText = 'display:block;position:fixed;bottom:0;left:0;right:0;background:#0f0f0f;border-top:2px solid #7c6aff;border-radius:20px 20px 0 0;z-index:99999;padding:14px 20px 36px;max-height:85vh;overflow-y:auto;-webkit-overflow-scrolling:touch;color:#f2f2f2;';
-    scrim.style.display = 'block';
-    try {
-      var mode = localStorage.getItem('exec_mode') || 'dark';
-      var accent = localStorage.getItem('exec_accent') || '#7c6aff';
-      sheet.querySelectorAll('.m-tog').forEach(function(x){
-        var on = x.dataset.mode === mode;
-        x.style.background = on ? '#242424' : 'none';
-        x.style.color = on ? '#f2f2f2' : '#a0a0a0';
-      });
-      sheet.querySelectorAll('.m-sw').forEach(function(x){
-        x.style.boxShadow = x.dataset.c === accent ? '0 0 0 2px #0f0f0f,0 0 0 4px #d4d4d4' : 'none';
-      });
-    } catch(e){}
-    try {
-      if(typeof supabase !== 'undefined' && supabase){
-        supabase.auth.getSession().then(function(r){
-          try {
-            var user = r && r.data && r.data.session && r.data.session.user;
-            if(user){
-              var em = user.email || '';
-              document.getElementById('m-email').textContent = em;
-              document.getElementById('m-avatar').textContent = em ? em[0].toUpperCase() : '?';
-              document.getElementById('m-sync').textContent = '● synced';
-              document.getElementById('m-sync').style.color = '#2ecc71';
-            }
-          } catch(e){}
-        });
-      }
-    } catch(e){}
-  }
-
-  function closeMobileSheet(){
-    scrim.style.display = 'none';
-    sheet.style.cssText = 'display:none;position:fixed;bottom:0;left:0;right:0;background:#0f0f0f;border-top:1px solid #3d3d3d;border-radius:20px 20px 0 0;z-index:99999;padding:14px 20px 36px;max-height:85vh;overflow-y:auto;-webkit-overflow-scrolling:touch;color:#f2f2f2;';
-  }
-  window.openMobileSheet = openMobileSheet;
+  window.openMobileSheet = function(){ openSettings(); };
+  window.closeMobileSheet = function(){ closeSettings(); };
 
   /* openSettings is called via onclick - button handles routing directly */
 
