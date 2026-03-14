@@ -772,6 +772,7 @@ function _subscribeRealtime(userId) {
       filter: `user_id=eq.${userId}`
     }, async (payload) => {
       // Another device saved — pull latest (no localStorage fallback)
+      if (_toggleRenderTimer) return; // tasks mid-animation, skip remote refresh
       const loaded = await loadFromSupabase(userId, false);
       if (loaded) refreshAllViews();
     })
@@ -1448,18 +1449,20 @@ state.tasks.push({
   due: nextDue
 });
 }
+let _toggleRenderTimer = null;
 function toggleTask(id, skipAnim) {
 const task = state.tasks.find(t => t.id === id); if (!task) return;
 const wrap = document.getElementById('task-wrap-' + id);
+if (wrap && wrap.classList.contains('completing')) return;
 if (!task.done && !skipAnim && wrap) {
 const check = wrap.querySelector('.task-check');
 if (check) { check.classList.add('checked'); }
-wrap.classList.add('completing');
-wrap.addEventListener('animationend', () => {
 snapshot(); task.done = true; task.doneAt = today();
 if (task.recur) spawnRecurring(task);
-save(); renderTasks(); renderDashboard();
-}, { once: true });
+save();
+wrap.classList.add('completing');
+clearTimeout(_toggleRenderTimer);
+_toggleRenderTimer = setTimeout(() => { _toggleRenderTimer = null; renderTasks(); renderDashboard(); }, 700);
 return;
 }
 snapshot(); task.done = !task.done; task.doneAt = task.done ? today() : null;
@@ -2621,10 +2624,9 @@ return `<div class="db-stat-strip" style="grid-template-columns:2fr 1fr 1fr">
 }
 function toggleT5Task(id) {
 const row = document.querySelector('.db-t5-row[data-id="'+id+'"]');
-if (!row || row.dataset.toggling) return;
-row.dataset.toggling = '1';
+if (!row) return;
 const task = state.tasks.find(t => t.id === id);
-if (!task) { delete row.dataset.toggling; return; }
+if (!task) return;
 snapshot();
 task.done = !task.done;
 task.doneAt = task.done ? today() : null;
@@ -2642,8 +2644,6 @@ if (fill) { fill.style.width = pct + '%'; fill.classList.toggle('complete', allD
 const prog = document.querySelector('.db-hero-progress');
 if (prog) { prog.textContent = doneCount + ' / ' + tasks2.length + ' done' + (allDone ? ' ✓' : ''); prog.classList.toggle('complete', allDone); }
 save();
-setTimeout(() => { delete row.dataset.toggling; }, 400);
-setTimeout(() => { renderTasks(); renderDashboard(); }, 600);
 }
 function dashT5Module() {
 const list=getTodays5();
