@@ -752,6 +752,143 @@ function _subscribeRealtime(userId) {
 }
 
 // ── Auth UI ──
+let _authTab = 'signin';
+
+function authSetTab(tab) {
+  _authTab = tab === 0 ? 'signin' : 'signup';
+  document.getElementById('auth-tab-signin').classList.toggle('active', tab === 0);
+  document.getElementById('auth-tab-signup').classList.toggle('active', tab === 1);
+  document.getElementById('auth-submit-btn').textContent = tab === 0 ? 'Sign In' : 'Create Account';
+  const fb = document.getElementById('auth-forgot-btn');
+  if (fb) fb.style.display = tab === 0 ? 'inline' : 'none';
+  const cf = document.getElementById('auth-confirm-field');
+  if (cf) cf.style.display = tab === 1 ? 'block' : 'none';
+  document.getElementById('auth-msg').textContent = '';
+}
+
+function authTogglePassword() {
+  const pw = document.getElementById('auth-password');
+  const btn = document.getElementById('auth-pw-toggle');
+  if (pw.type === 'password') { pw.type = 'text'; btn.textContent = 'Hide'; }
+  else { pw.type = 'password'; btn.textContent = 'Show'; }
+}
+
+function authShowForgot() {
+  document.getElementById('auth-form-main').style.display = 'none';
+  document.getElementById('auth-tabs').style.display = 'none';
+  document.getElementById('auth-form-forgot').style.display = 'block';
+  document.getElementById('auth-tagline').textContent = 'Reset your password';
+  document.getElementById('auth-msg').textContent = '';
+  const re = document.getElementById('auth-reset-email');
+  const em = document.getElementById('auth-email');
+  if (re && em) re.value = em.value;
+}
+
+function authHideForgot() {
+  document.getElementById('auth-form-main').style.display = 'block';
+  document.getElementById('auth-tabs').style.display = 'flex';
+  document.getElementById('auth-form-forgot').style.display = 'none';
+  document.getElementById('auth-tagline').textContent = 'Sign in to sync your data across devices';
+  document.getElementById('auth-msg').textContent = '';
+}
+
+async function authSendReset() {
+  const email = document.getElementById('auth-reset-email').value.trim();
+  const msg = document.getElementById('auth-msg');
+  if (!email) { msg.className='auth-msg error'; msg.textContent='Please enter your email.'; return; }
+  msg.className='auth-msg'; msg.textContent='Sending reset link...';
+  const { error } = await _supa.auth.resetPasswordForEmail(email, { redirectTo: window.location.href });
+  if (error) { msg.className='auth-msg error'; msg.textContent=error.message; }
+  else { msg.className='auth-msg success'; msg.textContent='Reset link sent! Check your inbox.'; }
+}
+
+function showChangePassword() {
+  closeSettings();
+  document.getElementById('auth-form-main').style.display = 'none';
+  document.getElementById('auth-tabs').style.display = 'none';
+  document.getElementById('auth-form-forgot').style.display = 'none';
+  document.getElementById('auth-form-change-pw').style.display = 'block';
+  document.getElementById('auth-tagline').textContent = 'Change your password';
+  document.getElementById('auth-msg').textContent = '';
+  document.getElementById('auth-overlay').style.display = 'flex';
+}
+
+async function authUpdatePassword() {
+  const np = document.getElementById('auth-new-password').value;
+  const nc = document.getElementById('auth-new-confirm').value;
+  const msg = document.getElementById('auth-msg');
+  if (!np) { msg.className='auth-msg error'; msg.textContent='Please enter a new password.'; return; }
+  if (np !== nc) { msg.className='auth-msg error'; msg.textContent='Passwords do not match.'; return; }
+  if (np.length < 6) { msg.className='auth-msg error'; msg.textContent='Password must be at least 6 characters.'; return; }
+  msg.className='auth-msg'; msg.textContent='Updating...';
+  const { error } = await _supa.auth.updateUser({ password: np });
+  if (error) { msg.className='auth-msg error'; msg.textContent=error.message; }
+  else {
+    msg.className='auth-msg success'; msg.textContent='Password updated!';
+    setTimeout(() => {
+      document.getElementById('auth-overlay').style.display = 'none';
+      document.getElementById('auth-form-change-pw').style.display = 'none';
+      document.getElementById('auth-form-main').style.display = 'block';
+      document.getElementById('auth-tabs').style.display = 'flex';
+    }, 1500);
+  }
+}
+
+async function authSubmit() {
+  const email = document.getElementById('auth-email').value.trim();
+  const password = document.getElementById('auth-password').value;
+  const btn = document.getElementById('auth-submit-btn');
+  const msg = document.getElementById('auth-msg');
+  if (!email || !password) { msg.className='auth-msg error'; msg.textContent='Please fill in all fields.'; return; }
+  if (_authTab === 'signup') {
+    const confirm = document.getElementById('auth-confirm').value;
+    if (password !== confirm) { msg.className='auth-msg error'; msg.textContent='Passwords do not match.'; return; }
+    if (password.length < 6) { msg.className='auth-msg error'; msg.textContent='Password must be at least 6 characters.'; return; }
+  }
+  btn.disabled = true;
+  msg.className='auth-msg'; msg.textContent = _authTab === 'signin' ? 'Signing in...' : 'Creating account...';
+  try {
+    let res;
+    if (_authTab === 'signin') {
+      res = await _supa.auth.signInWithPassword({ email, password });
+    } else {
+      res = await _supa.auth.signUp({ email, password });
+      if (!res.error && res.data.user && !res.data.session) {
+        msg.className='auth-msg success'; msg.textContent='Check your email to confirm your account!';
+        btn.disabled = false; return;
+      }
+    }
+    if (res.error) throw res.error;
+  } catch(err) {
+    msg.className='auth-msg error'; msg.textContent = err.message || 'Something went wrong.';
+    btn.disabled = false;
+  }
+}
+
+async function authSignOut() {
+  if (!confirm('Sign out of EXEC?')) return;
+  closeSettings();
+  await _supa.auth.signOut();
+  _currentUser = null;
+  const sd = document.getElementById('sync-dot');
+  if (sd) sd.style.display = 'none';
+  const se = document.getElementById('settings-user-email');
+  if (se) se.textContent = 'Not signed in';
+  const av = document.getElementById('settings-avatar');
+  if (av) av.textContent = '?';
+  const ss = document.getElementById('settings-sync-status');
+  if (ss) ss.textContent = '-';
+  authHideForgot();
+  authSetTab(0);
+  document.getElementById('auth-email').value = '';
+  document.getElementById('auth-password').value = '';
+  document.getElementById('auth-submit-btn').disabled = false;
+  document.getElementById('auth-msg').textContent = '';
+  document.getElementById('auth-overlay').style.display = 'flex';
+  state = { brainItems:[], tasks:[], projects:[], notes:[], focusSessions:[], reviewLogs:{}, todays5:{}, checklistState:{}, dayThemes:{}, archivedTasks:[], archivedNotes:[], archivedCaptures:[], archivedProjects:[] };
+  refreshAllViews();
+}
+
 // ── Sync indicator ──// ── Sync indicator ──
 function setSyncDot(status) {
   const d = document.getElementById('sync-dot');
@@ -2779,4 +2916,4 @@ if ('serviceWorker' in navigator) {
 
 </script>
 </body>
-</html>
+</html>    
