@@ -197,9 +197,15 @@
 <!-- QUICK ADD OVERLAY -->
 <div id="quick-add-overlay">
   <div id="quick-add-box">
-    <div id="quick-add-label">// QUICK CAPTURE</div>
-    <input type="text" id="quick-add-input" placeholder="Capture anything... (Enter to save, Esc to close)">
-    <div id="quick-add-hint">Saves to <span>Capture</span> instantly</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <div id="quick-add-label">// QUICK CAPTURE</div>
+      <button onclick="closeQuickAdd()" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:18px;padding:0 4px;line-height:1;">✕</button>
+    </div>
+    <input type="text" id="quick-add-input" placeholder="Capture anything...">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-top:10px">
+      <div id="quick-add-hint">Saves to <span>Capture</span> instantly</div>
+      <button onclick="(function(){var v=document.getElementById('quick-add-input').value.trim();if(v){snapshot();state.brainItems.unshift({id:uid(),text:v,created:Date.now()});save();renderBrainDump();updateNavMetrics();}closeQuickAdd();})()" style="background:var(--accent);color:var(--accent-text);border:none;border-radius:6px;padding:7px 16px;font-size:13px;font-weight:500;cursor:pointer;font-family:var(--sans);">Save</button>
+    </div>
   </div>
 </div>
 <!-- WEEK DETAIL MODAL -->
@@ -3106,6 +3112,34 @@ setActiveMobileNav(s);
 });
 var _origShowSection=showSection;
 showSection=function(id,btn){_origShowSection(id,btn);setActiveMobileNav(id);};
+
+/* Prevent iOS zoom on input focus */
+var mobileExtraStyle=document.createElement('style');
+mobileExtraStyle.textContent=
+'input,textarea,select{font-size:16px!important;}'+
+'.task-check{width:28px!important;height:28px!important;margin-right:12px!important;}'+
+'.task-row-btn{height:44px!important;padding:0 12px!important;}'+
+'#quick-add-box{width:calc(100vw - 32px)!important;max-width:100%!important;}'+
+'.note-composer{width:100%!important;max-width:100%!important;border-radius:0!important;height:100vh!important;max-height:100vh!important;}'+
+'.note-composer-overlay.active{padding-top:0!important;}';
+document.head.appendChild(mobileExtraStyle);
+
+/* Patch editCapture to add a Done button (no Escape on mobile) */
+var _origEditCapture=window.editCapture;
+window.editCapture=function(id){
+  if(_origEditCapture) _origEditCapture(id);
+  setTimeout(function(){
+    var ta=document.querySelector('.capture-edit-input');
+    if(!ta||ta.dataset.mp) return;
+    ta.dataset.mp='1';
+    var btn=document.createElement('button');
+    btn.textContent='Done';
+    btn.style.cssText='display:block;width:100%;margin-top:8px;padding:10px;background:var(--accent);color:#fff;border:none;border-radius:6px;font-size:15px;font-weight:500;cursor:pointer;font-family:var(--sans);';
+    btn.onclick=function(){ta.blur();};
+    ta.parentNode.insertBefore(btn,ta.nextSibling);
+  },50);
+};
+
 })();
 
 if ('serviceWorker' in navigator) {
