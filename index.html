@@ -847,9 +847,12 @@ _supa.auth.onAuthStateChange(async (event, session) => {
 
     // Only load data on these events — not on every token refresh
     if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN') {
-      const loaded = await loadFromSupabase(session.user.id);
-      if (!loaded) load();
-      refreshAllViews();
+      // Delay load slightly to let auth lock settle
+      setTimeout(async () => {
+        const loaded = await loadFromSupabase(session.user.id);
+        if (!loaded) load();
+        refreshAllViews();
+      }, 800);
     }
   }
 });
