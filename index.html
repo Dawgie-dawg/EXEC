@@ -1801,13 +1801,13 @@ return `<div class="task-row-wrap ${t.done ? 'done-row' : ''}" id="task-wrap-${t
 <div class="task-row-title">${escHtml(t.title)}${hasDetail ? ' <span style="font-size:12px;color:var(--text3);opacity:0.5" id="task-chevron-${t.id}">▾</span>' : ''}</div>
 </div>
 <div class="task-label-zone">${labelParts.join('')}</div>
+</div>
 <div class="task-row-actions">
 <button class="task-row-btn today-btn ${pinned ? 'pinned' : ''}" onclick="toggleTodays5('${t.id}')"
 title="${pinned ? 'Remove from Today\'s 5' : canPin ? 'Today\'s 5 is full' : 'Add to Today\'s 5'}">TODAY</button>
 <button class="task-row-btn ${t.blocked ? 'blocked-on' : ''}" onclick="toggleBlocked('${t.id}')" title="Toggle blocked">🚫</button>
 <button class="task-row-btn" onclick="editTask('${t.id}')" title="Edit">✏</button>
 <button class="task-row-btn danger" onclick="deleteTask('${t.id}')" title="Archive">✕</button>
-</div>
 </div>
 ${detail}
 </div>`;
