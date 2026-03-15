@@ -1802,6 +1802,7 @@ return `<div class="task-row-wrap ${t.done ? 'done-row' : ''}" id="task-wrap-${t
 </div>
 <div class="task-label-zone">${labelParts.join('')}</div>
 </div>
+${detail}
 <div class="task-row-actions">
 <button class="task-row-btn today-btn ${pinned ? 'pinned' : ''}" onclick="toggleTodays5('${t.id}')"
 title="${pinned ? 'Remove from Today\'s 5' : canPin ? 'Today\'s 5 is full' : 'Add to Today\'s 5'}">TODAY</button>
@@ -1809,7 +1810,6 @@ title="${pinned ? 'Remove from Today\'s 5' : canPin ? 'Today\'s 5 is full' : 'Ad
 <button class="task-row-btn" onclick="editTask('${t.id}')" title="Edit">✏</button>
 <button class="task-row-btn danger" onclick="deleteTask('${t.id}')" title="Archive">✕</button>
 </div>
-${detail}
 </div>`;
 }
 function updateProjectSelect() {
