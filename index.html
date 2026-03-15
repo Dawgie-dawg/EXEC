@@ -1751,10 +1751,8 @@ const row = document.getElementById('task-' + id);
 const actions = row ? row.querySelector('.task-row-actions') : null;
 if (actions) {
 if (isOpen) {
-// Insert actions after detail block
-detail.parentNode.insertBefore(actions, detail.nextSibling);
+wrap.appendChild(actions);
 } else {
-// Move actions back inside task-row
 row.appendChild(actions);
 }
 }
@@ -3131,6 +3129,9 @@ styleEl.textContent=
 '#settings-overlay.active{display:flex!important;align-items:flex-end!important;justify-content:stretch!important;padding-top:0!important;}'+
 (_isPWA ? '#settings-panel{width:100%!important;max-width:100%!important;margin:0!important;border-radius:20px 20px 0 0!important;max-height:60vh!important;}' : '#settings-panel{width:100%!important;max-width:100%!important;margin:0!important;border-radius:20px 20px 0 0!important;max-height:70vh!important;}');
 document.head.appendChild(styleEl);
+var mobileActionsStyle = document.createElement('style');
+mobileActionsStyle.textContent = '.task-row-wrap.expanded > .task-row-actions { position:static !important; display:flex !important; opacity:1 !important; width:100% !important; padding:6px 12px !important; border-top:1px solid var(--border) !important; gap:8px !important; justify-content:flex-start !important; background:none !important; box-sizing:border-box !important; right:auto !important; top:auto !important; bottom:auto !important; margin-left:0 !important; }';
+document.head.appendChild(mobileActionsStyle);
 document.querySelectorAll('.settings-section-label').forEach(function(el){
 var txt=el.textContent.trim();
 if(txt==='Archive'||txt==='Danger Zone'){
