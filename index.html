@@ -3078,7 +3078,7 @@ var nav = document.querySelector('nav');
 var subNav = document.querySelector('.sub-nav');
 var scrollCont = document.getElementById('scroll-container');
 var _isPWA = window.navigator.standalone === true;
-nav.style.cssText = 'position:relative;top:auto;left:auto;right:auto;flex-shrink:0;display:grid;grid-template-columns:auto 1fr;padding:0 14px;padding-top:'+(_isPWA?'env(safe-area-inset-top)':'0')+';height:'+(_isPWA?'calc(48px + env(safe-area-inset-top))':'48px')+';z-index:2;';
+nav.style.cssText = 'position:relative;top:auto;left:auto;right:auto;flex-shrink:0;display:grid;grid-template-columns:auto 0 1fr;padding:0 14px;padding-top:'+(_isPWA?'env(safe-area-inset-top)':'0')+';height:'+(_isPWA?'calc(48px + env(safe-area-inset-top))':'48px')+';z-index:2;';
 var metrics = nav.querySelector('.nav-metrics');
 if(metrics) metrics.style.display='none';
 var undoBtn=document.getElementById('undo-btn');
