@@ -1801,8 +1801,6 @@ return `<div class="task-row-wrap ${t.done ? 'done-row' : ''}" id="task-wrap-${t
 <div class="task-row-title">${escHtml(t.title)}${hasDetail ? ' <span style="font-size:12px;color:var(--text3);opacity:0.5" id="task-chevron-${t.id}">▾</span>' : ''}</div>
 </div>
 <div class="task-label-zone">${labelParts.join('')}</div>
-</div>
-${detail}
 <div class="task-row-actions">
 <button class="task-row-btn today-btn ${pinned ? 'pinned' : ''}" onclick="toggleTodays5('${t.id}')"
 title="${pinned ? 'Remove from Today\'s 5' : canPin ? 'Today\'s 5 is full' : 'Add to Today\'s 5'}">TODAY</button>
@@ -1810,6 +1808,8 @@ title="${pinned ? 'Remove from Today\'s 5' : canPin ? 'Today\'s 5 is full' : 'Ad
 <button class="task-row-btn" onclick="editTask('${t.id}')" title="Edit">✏</button>
 <button class="task-row-btn danger" onclick="deleteTask('${t.id}')" title="Archive">✕</button>
 </div>
+</div>
+${detail}
 </div>`;
 }
 function updateProjectSelect() {
@@ -3102,8 +3102,9 @@ styleEl.textContent=
 '.task-row-wrap.expanded .task-row{order:1;flex-wrap:wrap;}'+
 '.task-row-wrap.expanded .task-label-zone{display:none!important;}'+
 '.task-row-wrap.expanded .task-row-main{max-width:100%!important;width:100%!important;}'+
-'.task-row-wrap.expanded .task-row-actions{order:2!important;display:flex!important;padding:6px 12px!important;border-top:1px solid var(--border)!important;border-bottom:1px solid var(--border)!important;gap:8px!important;justify-content:flex-start!important;position:relative!important;background:none!important;}'+
-'.task-row-wrap.expanded .task-row-detail{order:3;}'+
+'.task-row-wrap.expanded .task-row-actions{order:3!important;display:flex!important;padding:6px 12px!important;border-top:1px solid var(--border)!important;gap:8px!important;justify-content:flex-start!important;background:none!important;}'+
+'.task-row-wrap.expanded .task-row{order:1!important;}'+
+'.task-row-wrap.expanded .task-row-detail{order:2!important;}'+
 '.task-row-wrap.expanded .task-row-btn{height:36px;padding:0 14px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-weight:500;font-family:var(--sans);color:var(--text2);}'+
 '.task-row-wrap.expanded .task-row-btn.today-btn.pinned{border-color:var(--yellow);color:var(--yellow);}'+
 '.task-row-wrap.expanded .task-row-btn.blocked-on{border-color:var(--pink);color:var(--pink);}'+
