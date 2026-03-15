@@ -3042,11 +3042,11 @@ setInterval(async () => {
 var isMobileSize = window.innerWidth <= 900;
 var isTouchDevice = ('ontouchstart' in window)||(navigator.maxTouchPoints>0);
 if(!isMobileSize && !isTouchDevice) return;
-document.documentElement.style.height = '100%';
-document.body.style.cssText = 'height:100%;width:100%;overscroll-behavior:none;';
+document.documentElement.style.cssText = 'height:100%;';
+document.body.style.cssText = 'height:100%;margin:0;padding:0;overscroll-behavior:none;';
 var wrapper = document.createElement('div');
 wrapper.id = 'mobile-wrapper';
-wrapper.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;display:flex;flex-direction:column;background:var(--bg);z-index:1;overscroll-behavior:none;';
+wrapper.style.cssText = 'display:flex;flex-direction:column;height:100%;width:100%;background:var(--bg);z-index:1;overscroll-behavior:none;';
 var nav = document.querySelector('nav');
 var subNav = document.querySelector('.sub-nav');
 var scrollCont = document.getElementById('scroll-container');
