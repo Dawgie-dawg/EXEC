@@ -1745,7 +1745,20 @@ const wrap = document.getElementById('task-wrap-' + id);
 const detail = document.getElementById('task-detail-' + id);
 if (!detail) return;
 const isOpen = detail.classList.toggle('open');
-if (wrap) wrap.classList.toggle('expanded', isOpen);
+if (wrap) {
+wrap.classList.toggle('expanded', isOpen);
+const row = document.getElementById('task-' + id);
+const actions = row ? row.querySelector('.task-row-actions') : null;
+if (actions) {
+if (isOpen) {
+// Move actions outside task-row, after detail
+wrap.appendChild(actions);
+} else {
+// Move actions back inside task-row
+row.appendChild(actions);
+}
+}
+}
 }
 function taskRowHTML(t, isSomeday = false) {
 const overdue = isOverdue(t.due);
@@ -3098,11 +3111,11 @@ styleEl.textContent=
 '.dash-grid-row2-inner{grid-template-columns:1fr!important;}'+
 '.task-row-actions{opacity:1!important;pointer-events:all!important;}'+
 '.task-row-wrap:not(.expanded) .task-row-actions{display:none!important;}'+
-'.task-row-wrap.expanded{display:flex;flex-direction:column;}'+
+'.task-row-wrap.expanded{display:flex!important;flex-direction:column!important;overflow:visible!important;}'+
 '.task-row-wrap.expanded .task-row{order:1;flex-wrap:wrap;}'+
 '.task-row-wrap.expanded .task-label-zone{display:none!important;}'+
 '.task-row-wrap.expanded .task-row-main{max-width:100%!important;width:100%!important;}'+
-'.task-row-wrap.expanded .task-row-actions{order:3!important;position:relative!important;right:auto!important;top:auto!important;bottom:auto!important;display:flex!important;padding:6px 12px!important;border-top:1px solid var(--border)!important;gap:8px!important;justify-content:flex-start!important;background:none!important;opacity:1!important;}'+
+'.task-row-wrap.expanded .task-row-actions{position:static!important;right:auto!important;top:auto!important;bottom:auto!important;opacity:1!important;display:flex!important;padding:6px 12px!important;margin-top:4px!important;border-top:1px solid var(--border)!important;gap:8px!important;justify-content:flex-start!important;background:none!important;width:100%!important;box-sizing:border-box!important;}'+
 '.task-row-wrap.expanded .task-row{order:1!important;position:static!important;}'+
 '.task-row-wrap.expanded .task-row-detail{order:2!important;}'+
 '.task-row-wrap.expanded .task-row-btn{height:36px;padding:0 14px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-weight:500;font-family:var(--sans);color:var(--text2);}'+
