@@ -3098,9 +3098,11 @@ var nav = document.querySelector('nav');
 var subNav = document.querySelector('.sub-nav');
 var scrollCont = document.getElementById('scroll-container');
 var _isPWA = window.navigator.standalone === true;
-nav.style.cssText = 'position:relative;top:auto;left:auto;right:auto;flex-shrink:0;display:grid;grid-template-columns:auto 1fr;padding:0 14px;padding-top:'+(_isPWA?'env(safe-area-inset-top)':'0')+';height:'+(_isPWA?'calc(48px + env(safe-area-inset-top))':'48px')+';z-index:2;';
+// Nav has 3 grid children: .nav-left, .nav-metrics, .nav-right
+// Hide metrics and use 2-column grid so left+right lay out correctly
 var metrics = nav.querySelector('.nav-metrics');
 if(metrics) metrics.style.display='none';
+nav.style.cssText = 'position:relative;top:auto;left:auto;right:auto;flex-shrink:0;display:flex;flex-direction:row;align-items:center;justify-content:space-between;padding:0 14px;padding-top:'+(_isPWA?'env(safe-area-inset-top)':'0')+';min-height:'+(_isPWA?'calc(48px + env(safe-area-inset-top))':'48px')+';z-index:2;background:var(--bg2);border-bottom:1px solid var(--border);';
 var undoBtn=document.getElementById('undo-btn');
 var redoBtn=document.getElementById('redo-btn');
 var undoHint=document.getElementById('undo-hint');
