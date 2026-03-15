@@ -3150,6 +3150,7 @@ bnav.innerHTML='<div style="background:var(--bg3);border:1px solid var(--border2
   _mBtn('notes',_iconNotes,'Notes',false)+
 '</div>';
 wrapper.appendChild(bnav);
+if(window.visualViewport){window.visualViewport.addEventListener('resize',function(){wrapper.style.height=window.visualViewport.height+'px';});}
 var sectionMap={dashboard:0,braindump:1,tasks:2,focus:3,projects:4,notes:5,review:6};
 function setActiveMobileNav(id){
 bnav.querySelectorAll('.m-nb').forEach(function(b){
