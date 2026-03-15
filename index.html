@@ -3073,7 +3073,7 @@ document.body.style.padding = '0';
 document.body.style.overscrollBehavior = 'none';
 var wrapper = document.createElement('div');
 wrapper.id = 'mobile-wrapper';
-wrapper.style.cssText = 'display:flex;flex-direction:column;height:100dvh;width:100%;background:var(--bg);z-index:1;overscroll-behavior:none;';
+wrapper.style.cssText = 'display:flex;flex-direction:column;min-height:100%;width:100%;background:var(--bg);z-index:1;overscroll-behavior:none;';
 var nav = document.querySelector('nav');
 var subNav = document.querySelector('.sub-nav');
 var scrollCont = document.getElementById('scroll-container');
@@ -3090,7 +3090,7 @@ if(undoHint) undoHint.style.display='none';
 var qaBtn=nav.querySelector('.quick-add-btn');
 if(qaBtn){qaBtn.innerHTML='<span>⚡</span> Add';qaBtn.style.fontSize='12px';qaBtn.style.padding='6px 10px';}
 if(subNav) subNav.style.display='none';
-scrollCont.style.cssText='position:relative;top:auto;left:auto;right:auto;bottom:auto;flex:1;overflow-y:auto;overflow-x:hidden;overscroll-behavior:none;';
+scrollCont.style.cssText='position:relative;top:auto;left:auto;right:auto;bottom:auto;flex:1;overflow-y:auto;overflow-x:hidden;overscroll-behavior:none;min-height:0;';
 document.querySelectorAll('.section').forEach(function(s){s.style.padding='16px 14px';s.style.maxWidth='100%';});
 var styleEl=document.createElement('style');
 styleEl.textContent=
