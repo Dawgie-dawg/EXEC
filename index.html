@@ -39,6 +39,20 @@
 #sync-dot{width:6px;height:6px;border-radius:50%;background:var(--green);flex-shrink:0;transition:background 0.3s;}
 #sync-dot.syncing{background:var(--orange);}
 #sync-dot.error{background:var(--red);}
+/* ── iOS PWA keyboard fix ── */
+@supports (-webkit-touch-callout: none) {
+  /* When keyboard is open iOS shrinks visualViewport but NOT window.innerHeight.
+     We drive layout from the wrapper div instead of fixed positioning. */
+  #mobile-wrapper { position: relative !important; }
+  #mobile-wrapper #scroll-container { -webkit-overflow-scrolling: touch; }
+  /* Inputs inside modals/overlays: ensure they scroll into view */
+  .modal-overlay.active .modal,
+  #quick-add-overlay.active #quick-add-box,
+  .note-composer-overlay.active .note-composer {
+    max-height: 80vh;
+    overflow-y: auto;
+  }
+}
 </style>
 </head>
 <body>
@@ -2987,7 +3001,12 @@ document.addEventListener('DOMContentLoaded', function() {
     el.addEventListener('focus', function() {
       if (authOverlay) {
         authOverlay.style.position = 'absolute';
-        authOverlay.style.minHeight = '100vh';
+        authOverlay.style.minHeight = '100%';
+        authOverlay.style.top = '0';
+        // Scroll the focused input into view after keyboard animates in
+        setTimeout(function() {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 350);
       }
     });
     el.addEventListener('blur', function() {
@@ -2995,6 +3014,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (authOverlay) {
           authOverlay.style.position = 'fixed';
           authOverlay.style.minHeight = '';
+          authOverlay.style.top = '';
         }
       }, 300);
     });
@@ -3189,6 +3209,30 @@ mobileExtraStyle.textContent=
 '.note-composer{width:100%!important;max-width:100%!important;border-radius:0!important;height:100vh!important;max-height:100vh!important;}'+
 '.note-composer-overlay.active{padding-top:0!important;}';
 document.head.appendChild(mobileExtraStyle);
+
+/* ── iOS PWA keyboard fix via visualViewport ── */
+if (window.visualViewport && _isPWA) {
+  function _onViewportResize() {
+    var vv = window.visualViewport;
+    var windowHeight = window.innerHeight;
+    var viewportHeight = vv.height;
+    var offsetTop = vv.offsetTop || 0;
+    var keyboardHeight = windowHeight - viewportHeight - offsetTop;
+    if (keyboardHeight > 50) {
+      // Keyboard is open — shrink scroll container and shift wrapper up
+      wrapper.style.height = viewportHeight + 'px';
+      wrapper.style.transform = 'translateY(' + offsetTop + 'px)';
+      scrollCont.style.paddingBottom = '16px';
+    } else {
+      // Keyboard closed — restore
+      wrapper.style.height = '100%';
+      wrapper.style.transform = '';
+      scrollCont.style.paddingBottom = '';
+    }
+  }
+  window.visualViewport.addEventListener('resize', _onViewportResize);
+  window.visualViewport.addEventListener('scroll', _onViewportResize);
+}
 
 /* Patch editCapture to add a Done button (no Escape on mobile) */
 var _origEditCapture=window.editCapture;
