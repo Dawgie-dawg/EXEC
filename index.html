@@ -90,7 +90,7 @@
 
     <!-- Change password form (hidden by default) -->
     <div id="auth-form-change-pw" style="display:none">
-      <div class="auth-tagline" style="margin-bottom:20px">Enter a new password</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px"><div class="auth-tagline" style="margin-bottom:0">Enter a new password</div><button onclick="document.getElementById('auth-overlay').style.display='none'" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:20px;padding:0;line-height:1">✕</button></div>
       <div class="auth-field">
         <label>New Password</label>
         <input type="password" id="auth-new-password" placeholder="••••••••">
@@ -3078,7 +3078,7 @@ var nav = document.querySelector('nav');
 var subNav = document.querySelector('.sub-nav');
 var scrollCont = document.getElementById('scroll-container');
 var _isPWA = window.navigator.standalone === true;
-nav.style.cssText = 'position:fixed;top:0;left:0;right:0;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:0 14px;padding-top:'+(_isPWA?'env(safe-area-inset-top)':'0')+';height:'+(_isPWA?'calc(48px + env(safe-area-inset-top))':'48px')+';z-index:100;background:var(--bg2);border-bottom:1px solid var(--border);';
+nav.style.cssText = 'position:fixed;top:0;left:0;right:0;display:grid;grid-template-columns:1fr 0 auto;align-items:center;padding:0 14px;padding-top:'+(_isPWA?'env(safe-area-inset-top)':'0')+';height:'+(_isPWA?'calc(48px + env(safe-area-inset-top))':'48px')+';z-index:100;background:var(--bg2);border-bottom:1px solid var(--border);';
 var metrics = nav.querySelector('.nav-metrics');
 if(metrics) metrics.style.display='none';
 var undoBtn=document.getElementById('undo-btn');
@@ -3111,13 +3111,13 @@ styleEl.textContent=
 '.task-row-wrap.expanded .task-row-btn.blocked-on{border-color:var(--pink);color:var(--pink);}'+
 '.task-row-wrap.expanded .task-row-btn.danger{border-color:rgba(231,76,60,0.3);color:var(--red);}'+
 '.task-row-main{max-width:calc(100% - 120px)!important;}'+
-'.modal{width:100%!important;max-width:100%!important;border-radius:20px 20px 0 0!important;position:fixed!important;bottom:0!important;left:0!important;right:0!important;margin:0!important;max-height:90vh!important;overflow-y:auto!important;}'+
+'.modal{width:100%!important;max-width:100%!important;border-radius:20px 20px 0 0!important;position:fixed!important;bottom:0!important;left:0!important;right:0!important;margin:0!important;max-height:75vh!important;overflow-y:auto!important;}'+
 '.modal-overlay{align-items:flex-end!important;}'+
 '.timer-ring{width:220px!important;height:220px!important;}'+
 '.timer-ring svg{width:220px!important;height:220px!important;}'+
 '.timer-time{font-size:42px!important;}'+
 '#settings-overlay.active{display:flex!important;align-items:flex-end!important;justify-content:stretch!important;padding-top:0!important;}'+
-'#settings-panel{width:100%!important;max-width:100%!important;margin:0!important;border-radius:20px 20px 0 0!important;max-height:85vh!important;}';
+'#settings-panel{width:100%!important;max-width:100%!important;margin:0!important;border-radius:20px 20px 0 0!important;max-height:70vh!important;}';
 document.head.appendChild(styleEl);
 document.querySelectorAll('.settings-section-label').forEach(function(el){
 var txt=el.textContent.trim();
