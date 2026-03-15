@@ -39,20 +39,6 @@
 #sync-dot{width:6px;height:6px;border-radius:50%;background:var(--green);flex-shrink:0;transition:background 0.3s;}
 #sync-dot.syncing{background:var(--orange);}
 #sync-dot.error{background:var(--red);}
-/* ── iOS PWA keyboard fix ── */
-@supports (-webkit-touch-callout: none) {
-  /* When keyboard is open iOS shrinks visualViewport but NOT window.innerHeight.
-     We drive layout from the wrapper div instead of fixed positioning. */
-  #mobile-wrapper { position: relative !important; }
-  #mobile-wrapper #scroll-container { -webkit-overflow-scrolling: touch; }
-  /* Inputs inside modals/overlays: ensure they scroll into view */
-  .modal-overlay.active .modal,
-  #quick-add-overlay.active #quick-add-box,
-  .note-composer-overlay.active .note-composer {
-    max-height: 80vh;
-    overflow-y: auto;
-  }
-}
 </style>
 </head>
 <body>
@@ -3001,12 +2987,7 @@ document.addEventListener('DOMContentLoaded', function() {
     el.addEventListener('focus', function() {
       if (authOverlay) {
         authOverlay.style.position = 'absolute';
-        authOverlay.style.minHeight = '100%';
-        authOverlay.style.top = '0';
-        // Scroll the focused input into view after keyboard animates in
-        setTimeout(function() {
-          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }, 350);
+        authOverlay.style.minHeight = '100vh';
       }
     });
     el.addEventListener('blur', function() {
@@ -3014,7 +2995,6 @@ document.addEventListener('DOMContentLoaded', function() {
         if (authOverlay) {
           authOverlay.style.position = 'fixed';
           authOverlay.style.minHeight = '';
-          authOverlay.style.top = '';
         }
       }, 300);
     });
@@ -3098,11 +3078,9 @@ var nav = document.querySelector('nav');
 var subNav = document.querySelector('.sub-nav');
 var scrollCont = document.getElementById('scroll-container');
 var _isPWA = window.navigator.standalone === true;
-// Nav has 3 grid children: .nav-left, .nav-metrics, .nav-right
-// Hide metrics and use 2-column grid so left+right lay out correctly
+nav.style.cssText = 'position:relative;top:auto;left:auto;right:auto;flex-shrink:0;display:grid;grid-template-columns:auto 1fr;padding:0 14px;padding-top:'+(_isPWA?'env(safe-area-inset-top)':'0')+';height:'+(_isPWA?'calc(48px + env(safe-area-inset-top))':'48px')+';z-index:2;';
 var metrics = nav.querySelector('.nav-metrics');
 if(metrics) metrics.style.display='none';
-nav.style.cssText = 'position:relative;top:auto;left:auto;right:auto;flex-shrink:0;display:flex;flex-direction:row;align-items:center;justify-content:space-between;padding:0 14px;padding-top:'+(_isPWA?'env(safe-area-inset-top)':'0')+';min-height:'+(_isPWA?'calc(48px + env(safe-area-inset-top))':'48px')+';z-index:2;background:var(--bg2);border-bottom:1px solid var(--border);';
 var undoBtn=document.getElementById('undo-btn');
 var redoBtn=document.getElementById('redo-btn');
 var undoHint=document.getElementById('undo-hint');
@@ -3212,30 +3190,6 @@ mobileExtraStyle.textContent=
 '.note-composer-overlay.active{padding-top:0!important;}';
 document.head.appendChild(mobileExtraStyle);
 
-/* ── iOS PWA keyboard fix via visualViewport ── */
-if (window.visualViewport && _isPWA) {
-  function _onViewportResize() {
-    var vv = window.visualViewport;
-    var windowHeight = window.innerHeight;
-    var viewportHeight = vv.height;
-    var offsetTop = vv.offsetTop || 0;
-    var keyboardHeight = windowHeight - viewportHeight - offsetTop;
-    if (keyboardHeight > 50) {
-      // Keyboard is open — shrink scroll container and shift wrapper up
-      wrapper.style.height = viewportHeight + 'px';
-      wrapper.style.transform = 'translateY(' + offsetTop + 'px)';
-      scrollCont.style.paddingBottom = '16px';
-    } else {
-      // Keyboard closed — restore
-      wrapper.style.height = '100%';
-      wrapper.style.transform = '';
-      scrollCont.style.paddingBottom = '';
-    }
-  }
-  window.visualViewport.addEventListener('resize', _onViewportResize);
-  window.visualViewport.addEventListener('scroll', _onViewportResize);
-}
-
 /* Patch editCapture to add a Done button (no Escape on mobile) */
 var _origEditCapture=window.editCapture;
 window.editCapture=function(id){
@@ -3253,6 +3207,12 @@ window.editCapture=function(id){
 };
 
 })();
+
+// iOS PWA keyboard fix — standalone mode hides keyboard behind overflow:hidden body
+if (window.navigator.standalone) {
+  document.body.style.overflow = 'visible';
+  document.getElementById('scroll-container').style.bottom = '0';
+}
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
