@@ -3169,9 +3169,11 @@ bnav.querySelectorAll('.m-nb').forEach(function(b){
 var on=b.dataset.s===id;
 b.style.background=on?'var(--bg4)':'none';
 b.style.color=on?'var(--accent)':'var(--text3)';
-var lbl=b.querySelector('span');
-lbl.style.color=on?'var(--accent)':'var(--text3)';
-lbl.style.fontWeight=on?'700':'500';
+var spans=b.querySelectorAll('span');
+spans.forEach(function(sp){
+if(sp.id&&sp.id.indexOf('m-badge')===0){sp.style.color='#ffffff';}
+else{sp.style.color=on?'var(--accent)':'var(--text3)';sp.style.fontWeight=on?'700':'500';}
+});
 });
 }
 bnav.querySelectorAll('.m-nb').forEach(function(btn){
