@@ -3079,6 +3079,7 @@ var subNav = document.querySelector('.sub-nav');
 var scrollCont = document.getElementById('scroll-container');
 var _isPWA = window.navigator.standalone === true;
 nav.style.cssText = 'position:fixed;top:0;left:0;right:0;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:0 14px;padding-top:'+(_isPWA?'env(safe-area-inset-top)':'0')+';height:'+(_isPWA?'calc(48px + env(safe-area-inset-top))':'48px')+';z-index:100;background:var(--bg2);border-bottom:1px solid var(--border);';
+var navRight = nav.querySelector('.nav-right'); if(navRight) navRight.style.justifySelf='end';
 var metrics = nav.querySelector('.nav-metrics');
 if(metrics) metrics.style.display='none';
 var undoBtn=document.getElementById('undo-btn');
