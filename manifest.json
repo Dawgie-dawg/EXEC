@@ -1,7 +1,7 @@
 {
-  "name": "EXEC — ADHD Business OS",
+  "name": "EXEC — Business OS",
   "short_name": "EXEC",
-  "description": "The ADHD Business OS. Capture, focus, and ship.",
+  "description": "The Business OS. Capture, focus, and ship.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#000000",
