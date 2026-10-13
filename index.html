@@ -592,12 +592,54 @@
 </div>
 <!-- FOCUS -->
 <div class="section" id="section-focus">
-  <div class="section-header"><div class="section-title">Focus Session</div></div>
+  <style>
+  .focus-container{max-width:460px}
+  .fx-task{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:14px;text-align:left;margin-bottom:26px}
+  .fx-task .focus-task-select{margin-bottom:0}
+  .fx-task-detail{font-family:var(--sans);font-size:12px;color:var(--text3);margin-top:10px;line-height:1.5}
+  .fx-task-detail .fx-donewhen{color:var(--text2);white-space:pre-wrap;margin-top:4px}
+  .fx-quickadd input{width:100%;margin-top:10px;background:transparent;border:1px dashed var(--border2);font-size:13px;padding:7px 10px;box-sizing:border-box}
+  .timer-ring.is-running .timer-ring-fill{filter:drop-shadow(0 0 10px color-mix(in srgb,var(--accent) 60%,transparent))}
+  .timer-ring.is-running .timer-ring-fill.is-break{filter:drop-shadow(0 0 10px color-mix(in srgb,var(--green) 60%,transparent))}
+  .timer-ring.is-paused .timer-time{color:var(--text3)}
+  .timer-time{font-variant-numeric:tabular-nums}
+  .fx-ends{font-family:var(--sans);font-size:12px;color:var(--text3);min-height:15px}
+  .fx-log-head{display:flex;justify-content:space-between;font-family:var(--sans);font-size:12px;color:var(--text3);text-transform:uppercase;letter-spacing:0.1em;margin:22px 0 8px;padding-bottom:6px;border-bottom:1px solid var(--border);text-align:left}
+  .fx-tag{font-size:10px;padding:1px 6px;border-radius:3px;background:rgba(243,156,18,0.15);color:var(--orange);margin-left:6px;font-weight:600;letter-spacing:0.3px}
+  .fx-full{position:fixed;inset:0;z-index:5000;background:#000;color:#f2f2f2;display:none;flex-direction:column;align-items:center;justify-content:space-between;padding:max(20px,env(safe-area-inset-top)) 20px max(30px,env(safe-area-inset-bottom));font-family:var(--sans);--fx:var(--accent);overflow:hidden;box-sizing:border-box}
+  .fx-full.is-break{--fx:var(--green)}
+  .fx-full::before{content:'';position:absolute;left:50%;top:50%;width:80vmin;height:80vmin;transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(circle,color-mix(in srgb,var(--fx) 24%,transparent) 0%,transparent 65%);opacity:0.3;transition:opacity 1.2s;pointer-events:none}
+  .fx-full.is-running::before{opacity:1;animation:fxBreathe 8s ease-in-out infinite}
+  @keyframes fxBreathe{0%,100%{transform:translate(-50%,-50%) scale(0.85)}50%{transform:translate(-50%,-50%) scale(1.12)}}
+  .fxf-top{width:100%;display:flex;justify-content:space-between;align-items:center;position:relative}
+  .fxf-phase{font-size:12px;letter-spacing:3px;color:var(--fx);font-weight:600}
+  .fx-full.is-paused .fxf-phase{color:#a0a0a0}
+  .fxf-exit{background:none;border:1px solid #333;color:#a0a0a0;border-radius:20px;padding:6px 14px;font-size:12px;cursor:pointer;font-family:var(--sans)}
+  .fxf-exit:hover{color:#f2f2f2;border-color:#555}
+  .fxf-center{display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center;position:relative;max-width:900px}
+  .fxf-task{font-size:clamp(16px,2.6vw,26px);color:#d4d4d4;font-weight:500;max-width:90vw}
+  .fxf-time{font-size:min(24vw,34vh);font-weight:700;line-height:0.9;letter-spacing:-0.04em;color:var(--fx);font-variant-numeric:tabular-nums;transition:color 0.6s}
+  .fx-full.is-paused .fxf-time{color:#4a4a4a}
+  .fxf-ends{font-size:13px;color:#a0a0a0;min-height:16px}
+  .fxf-done{font-size:14px;color:#8a8a8a;max-width:560px;line-height:1.5;white-space:pre-wrap}
+  .fxf-controls{display:flex;gap:18px;align-items:center;position:relative}
+  .fxf-btn{width:52px;height:52px;border-radius:50%;border:1px solid #333;background:#111;color:#d4d4d4;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+  .fxf-btn:hover{border-color:#555;color:#fff}
+  .fxf-btn.play{width:78px;height:78px;background:var(--fx);border:none;color:#000;font-size:26px}
+  .fxf-hint{font-size:11px;color:#555;position:relative;margin-top:12px;text-align:center}
+  .fxf-bar{position:absolute;left:0;right:0;bottom:0;height:4px;background:#1a1a1a}
+  .fxf-bar>div{height:100%;background:var(--fx);transition:width 1s linear}
+  </style>
+  <div class="section-header"><div class="section-title">Focus Session</div><button class="btn btn-ghost" onclick="focusFullscreen(true)" title="Full screen focus mode">⛶ Full screen</button></div>
   <div class="focus-container">
-    <select class="focus-task-select" id="focus-task-select">
-      <option value="">— Pick a task —</option>
-    </select>
-    <div class="timer-ring">
+    <div class="fx-task">
+      <select class="focus-task-select" id="focus-task-select" onchange="focusPickTask(this.value)">
+        <option value="">— Pick a task —</option>
+      </select>
+      <div class="fx-task-detail" id="fx-task-detail"></div>
+      <form class="fx-quickadd" onsubmit="focusQuickAdd(event)"><input type="text" id="fx-new-task" placeholder="+ New task — type it and press Enter" autocomplete="off"></form>
+    </div>
+    <div class="timer-ring" id="fx-ring">
       <svg width="260" height="260" viewBox="0 0 260 260">
         <circle class="timer-ring-bg" cx="130" cy="130" r="118"/>
         <circle class="timer-ring-fill" id="timer-ring-fill" cx="130" cy="130" r="118" stroke-dasharray="741.4" stroke-dashoffset="0"/>
@@ -605,13 +647,14 @@
       <div class="timer-inner">
         <div class="timer-phase-label" id="timer-phase-label">WORK</div>
         <div class="timer-time" id="timer-display">25:00</div>
+        <div class="fx-ends" id="fx-ends"></div>
       </div>
     </div>
     <div class="pomo-track" id="pomo-dots"></div>
     <div class="timer-controls">
-      <button class="timer-btn timer-btn-reset" onclick="resetTimer()" title="Reset">↺</button>
+      <button class="timer-btn timer-btn-reset" onclick="resetTimer()" title="Reset (saves the minutes worked)">↺</button>
       <button class="timer-btn timer-btn-play" id="play-btn" onclick="toggleTimer()">▶</button>
-      <button class="timer-btn timer-btn-skip" onclick="skipPhase()" title="Skip">⏭</button>
+      <button class="timer-btn timer-btn-skip" onclick="skipPhase()" title="Skip to the next phase">⏭</button>
     </div>
     <div class="focus-time-btns">
       <button class="focus-time-btn active" id="work-25" onclick="setWorkTime(25, this)">25m</button>
@@ -619,7 +662,26 @@
       <button class="focus-time-btn break" id="break-5" onclick="setBreakTime(5, this)">5m break</button>
       <button class="focus-time-btn break" id="break-15" onclick="setBreakTime(15, this)">15m break</button>
     </div>
-    <div id="focus-session-log" style="text-align:left;margin-top:16px"></div>
+    <div class="fx-log-head"><span>Today's sessions</span><span id="fx-log-total"></span></div>
+    <div id="focus-session-log" style="text-align:left"></div>
+  </div>
+  <div class="fx-full" id="fx-full">
+    <div class="fxf-top"><span class="fxf-phase" id="fxf-phase">WORK</span><button class="fxf-exit" onclick="focusFullscreen(false)">✕ Exit · Esc</button></div>
+    <div class="fxf-center">
+      <div class="fxf-task" id="fxf-task"></div>
+      <div class="fxf-time" id="fxf-time">25:00</div>
+      <div class="fxf-ends" id="fxf-ends"></div>
+      <div class="fxf-done" id="fxf-done"></div>
+    </div>
+    <div>
+      <div class="fxf-controls">
+        <button class="fxf-btn" onclick="resetTimer()" title="Reset (saves the minutes worked)">↺</button>
+        <button class="fxf-btn play" id="fxf-play" onclick="toggleTimer()">▶</button>
+        <button class="fxf-btn" onclick="skipPhase()" title="Skip to the next phase">⏭</button>
+      </div>
+      <div class="fxf-hint">Space to start or pause · Esc to exit</div>
+    </div>
+    <div class="fxf-bar"><div id="fxf-bar-fill" style="width:0"></div></div>
   </div>
 </div>
 <!-- REVIEW -->
@@ -756,6 +818,8 @@ renderDashboard(); renderBrainDump(); renderTasks();
 renderProjects(); renderNotes(); renderFocusSelect();
 const _sch = document.getElementById('section-schedule');
 if (_sch && _sch.classList.contains('active')) renderSchedule();
+// pick up a Focus timer left running, once the saved data has loaded
+if (!_fxRestored && (_booted || !_currentUser)) { _fxRestored = true; focusRestore(); }
 }
 function updateUndoRedoUI() {
 const u = document.getElementById('undo-btn'), r = document.getElementById('redo-btn');
@@ -2252,86 +2316,267 @@ else if (action==='keep') { note.processed = 'keep'; flashUndoHint('Saved to ref
 else if (action==='discard') { if (!state.archivedNotes) state.archivedNotes = []; state.archivedNotes.unshift({ ...note, archivedAt: Date.now() }); state.notes = state.notes.filter(n => n.id!==id); flashUndoHint('Discarded · Ctrl+Z to undo'); }
 save(); renderNotes(); updateNavMetrics();
 }
+// ── Focus timer ──
+// Counts down to a clock end time, so it stays right while the tab is hidden
+// or the phone is locked. Saves the minutes actually worked — also on reset,
+// skip, switching task, and across closing the app (it resumes on reopen).
 let timerInterval = null, timerRunning = false, timerMode = 'work';
 let workMins = 25, breakMins = 5, timerSeconds = 25 * 60, sessionStartTime = null;
-let pomoDone = (state.focusSessions||[]).filter(s => s.date===today()).length;
+let timerEndAt = 0, workedMs = 0, runStartedAt = 0, focusTaskId = '';
+let _fxRestored = false, _fxFull = false, _fxWake = null;
 function getTotal() { return (timerMode==='work' ? workMins : breakMins) * 60; }
-function renderFocusSelect() {
-const sel = document.getElementById('focus-task-select');
-const t5ids = getTodays5();
-const active = state.tasks.filter(t => t5ids.includes(t.id) && !t.done);
-sel.innerHTML = '<option value="">— Pick from Today\'s 5 —</option>' + active.map(t => `<option value="${t.id}">${escHtml(t.title)}</option>`).join('');
-if (!active.length) sel.innerHTML = '<option value="">No tasks in Today\'s 5 yet</option>';
-updateTimerDisplay(); updatePomodots();
+function focusWorkedMs(at) {
+if (!(timerRunning && timerMode === 'work' && runStartedAt)) return workedMs;
+const end = Math.min(at || Date.now(), timerEndAt || Infinity);
+return workedMs + Math.max(0, end - runStartedAt);
+}
+function focusPersist() {
+try { localStorage.setItem('exec_timer', JSON.stringify({ timerMode, workMins, breakMins, timerSeconds, timerRunning, timerEndAt, workedMs, runStartedAt, focusTaskId, sessionStartTime })); } catch(e) {}
+}
+function focusRestore() {
+let s = null;
+try { s = JSON.parse(localStorage.getItem('exec_timer') || 'null'); } catch(e) {}
+if (!s) return;
+timerMode = s.timerMode === 'break' ? 'break' : 'work';
+workMins = s.workMins || 25; breakMins = s.breakMins || 5;
+timerSeconds = s.timerSeconds || getTotal();
+workedMs = s.workedMs || 0; runStartedAt = s.runStartedAt || 0;
+focusTaskId = s.focusTaskId || ''; sessionStartTime = s.sessionStartTime || null;
+if (s.timerRunning && s.timerEndAt) {
+  timerRunning = true; timerEndAt = s.timerEndAt;
+  if (timerEndAt > Date.now()) focusRun();
+  else focusFinishPhase(true);   // it ran out while the app was closed
+}
+renderFocusSelect();
+}
+function focusRun() {
+timerRunning = true;
+if (!timerEndAt) timerEndAt = Date.now() + timerSeconds * 1000;
+if (timerMode === 'work') {
+  if (!runStartedAt) runStartedAt = Date.now();
+  if (!sessionStartTime) sessionStartTime = Date.now();
+}
+clearInterval(timerInterval);
+timerInterval = setInterval(focusTick, 250);
+focusTick(); focusPersist(); focusWake();
+}
+function focusTick() {
+if (!timerRunning) return;
+timerSeconds = Math.max(0, Math.ceil((timerEndAt - Date.now()) / 1000));
+updateTimerDisplay();
+if (timerSeconds <= 0) focusFinishPhase(false);
+}
+function focusStop() {
+clearInterval(timerInterval);
+timerRunning = false; timerEndAt = 0; runStartedAt = 0; sessionStartTime = null; workedMs = 0;
+}
+// Save the work minutes so far as a session (1 min or more); a running timer
+// carries on as a fresh session from `at`.
+function focusLogWork(at) {
+at = at || Date.now();
+const ms = focusWorkedMs(at), start = sessionStartTime;
+workedMs = 0;
+const running = timerRunning && timerMode === 'work';
+runStartedAt = running ? at : 0; sessionStartTime = running ? at : null;
+const mins = Math.round(ms / 60000);
+if (mins < 1) { if (ms > 0) flashUndoHint('Under 1 minute · not saved'); return; }
+const t = state.tasks.find(x => x.id === focusTaskId);
+logSession(t ? t.title : 'Unassigned', mins, { id: 'fs' + (start || at), taskId: t ? t.id : '', partial: ms < workMins * 60000 - 30000, at });
+}
+function focusFinishPhase(whileAway) {
+const at = whileAway ? timerEndAt : Date.now();
+if (timerMode === 'work') { focusLogWork(at); timerMode = 'break'; }
+else timerMode = 'work';
+focusStop();
+timerSeconds = getTotal(); updateTimerDisplay(); focusPersist(); focusWake();
+if (whileAway) flashUndoHint('Focus session finished while you were away · saved ✓');
+else playDing();
+}
+function toggleTimer() {
+if (timerRunning) {
+  timerSeconds = Math.max(0, Math.ceil((timerEndAt - Date.now()) / 1000));
+  if (timerMode === 'work' && runStartedAt) { workedMs += Date.now() - runStartedAt; runStartedAt = 0; }
+  timerRunning = false; timerEndAt = 0; clearInterval(timerInterval);
+  updateTimerDisplay(); focusPersist(); focusWake();
+} else focusRun();
+}
+function skipPhase() {
+if (timerMode === 'work') { focusLogWork(); timerMode = 'break'; }
+else timerMode = 'work';
+focusStop();
+timerSeconds = getTotal(); updateTimerDisplay(); focusPersist(); focusWake();
+}
+function resetTimer() {
+if (timerMode === 'work') focusLogWork();
+focusStop(); timerMode = 'work';
+timerSeconds = workMins * 60; updateTimerDisplay(); focusPersist(); focusWake();
 }
 function setWorkTime(mins, btn) {
 if (timerRunning) return;
 workMins = mins; timerMode = 'work'; timerSeconds = mins * 60;
 document.querySelectorAll('.focus-time-btn').forEach(b => b.classList.remove('active'));
-btn.classList.add('active'); updateTimerDisplay();
+if (btn) btn.classList.add('active');
+updateTimerDisplay(); focusPersist();
 }
 function setBreakTime(mins, btn) {
 if (timerRunning) return;
-breakMins = mins; timerMode = 'break'; timerSeconds = mins * 60;
+if (timerMode === 'work') focusLogWork();
+breakMins = mins; timerMode = 'break'; timerSeconds = mins * 60; workedMs = 0; sessionStartTime = null;
 document.querySelectorAll('.focus-time-btn').forEach(b => b.classList.remove('active'));
-btn.classList.add('active'); updateTimerDisplay();
+if (btn) btn.classList.add('active');
+updateTimerDisplay(); focusPersist();
+}
+// Switching task mid-session: the minutes so far go to the old task
+function focusPickTask(id) {
+if (id === focusTaskId) return;
+if (timerMode === 'work' && focusWorkedMs() >= 60000) focusLogWork();
+focusTaskId = id || '';
+focusPersist(); renderFocusSelect();
+}
+function focusQuickAdd(e) {
+e.preventDefault();
+const input = document.getElementById('fx-new-task'), title = input.value.trim();
+if (!title) return;
+snapshot();
+const t = { id: uid(), title, priority: 'medium', difficulty: 'medium', done: false, someday: 'no', projectId: null, created: Date.now(), due: '', est: '', recur: '', blocked: false, doneAt: null };
+state.tasks.push(t);
+input.value = '';
+save(); renderTasks();
+focusPickTask(t.id);
+flashUndoHint('Task added ✓');
+}
+function focusEndMin(s) {
+const m = String(s.time || '').match(/(\d{1,2}):(\d{2})\s*([AP]M)?/i);
+if (!m) return null;
+let h = Number(m[1]);
+if (m[3]) { h = h % 12; if (m[3].toUpperCase() === 'PM') h += 12; }
+return h * 60 + Number(m[2]);
+}
+function focusClock(min) { min = ((min % 1440) + 1440) % 1440; const h = Math.floor(min / 60), m = min % 60; return (h % 12 || 12) + ':' + String(m).padStart(2,'0') + (h >= 12 ? 'pm' : 'am'); }
+function renderFocusSelect() {
+const sel = document.getElementById('focus-task-select'); if (!sel) return;
+const t5ids = getTodays5();
+const open = state.tasks.filter(t => !t.done);
+const t5 = t5ids.map(id => open.find(t => t.id === id)).filter(Boolean);
+const rest = open.filter(t => !t5ids.includes(t.id) && t.someday !== 'yes').sort((a, b) => priorityOrder(a.priority) - priorityOrder(b.priority));
+const parked = open.filter(t => !t5ids.includes(t.id) && t.someday === 'yes');
+if (focusTaskId && !open.some(t => t.id === focusTaskId)) focusTaskId = '';
+const opt = t => `<option value="${t.id}" ${t.id === focusTaskId ? 'selected' : ''}>${escHtml(t.title)}</option>`;
+sel.innerHTML = `<option value="">— Pick a task —</option>`
+  + (t5.length ? `<optgroup label="Today's 5">${t5.map(opt).join('')}</optgroup>` : '')
+  + (rest.length ? `<optgroup label="Other tasks">${rest.map(opt).join('')}</optgroup>` : '')
+  + (parked.length ? `<optgroup label="Someday / parking lot">${parked.map(opt).join('')}</optgroup>` : '');
+sel.value = focusTaskId;
+const det = document.getElementById('fx-task-detail');
+const t = state.tasks.find(x => x.id === focusTaskId);
+if (det) {
+  if (t) {
+    const all = (state.focusSessions || []).filter(s => s.taskId ? s.taskId === t.id : s.task === t.title);
+    const spent = all.reduce((n, s) => n + (Number(s.mins) || 0), 0);
+    det.innerHTML = `<span>${t.est ? 'Est. ' + schedDur(Number(t.est)) + ' · ' : ''}${spent ? schedDur(spent) + ' focused so far' : 'No focus time yet'}</span>${t.doneWhen ? `<div class="fx-donewhen">✓ Done when: ${escHtml(t.doneWhen)}</div>` : ''}`;
+  } else det.innerHTML = 'Pick a task, or add one below. Sessions with no task are saved as Unassigned.';
+}
+renderFocusLog();
+updateTimerDisplay(); updatePomodots();
+}
+function renderFocusLog() {
+const log = document.getElementById('focus-session-log'); if (!log) return;
+const list = (state.focusSessions || []).filter(s => s.date === today()).map(s => ({ s, end: focusEndMin(s) })).sort((a, b) => (b.end || 0) - (a.end || 0));
+const total = list.reduce((n, x) => n + (Number(x.s.mins) || 0), 0);
+const tot = document.getElementById('fx-log-total');
+if (tot) tot.textContent = total ? schedDur(total) + ' focused' : '';
+log.innerHTML = list.map(({ s, end }) => {
+  const mins = Number(s.mins || s.duration || 0);
+  const when = end === null ? escHtml(s.time || '') : focusClock(end - mins) + ' – ' + focusClock(end);
+  return `<div class="session-log-entry"><div class="log-dot" style="${s.partial ? 'background:var(--orange)' : ''}"></div><span style="color:var(--text3);font-family:var(--sans);font-size:12px;white-space:nowrap">${when}</span><span style="flex:1">${mins} min · <strong>${escHtml(s.task || 'Unassigned')}</strong>${s.partial ? '<span class="fx-tag">PARTIAL</span>' : ''}</span></div>`;
+}).join('') || '<div style="font-family:var(--sans);font-size:12px;color:var(--text3);font-style:italic;padding:6px 0">No sessions yet today.</div>';
 }
 function updateTimerDisplay() {
-const m = Math.floor(timerSeconds/60).toString().padStart(2,'0');
-const s = (timerSeconds%60).toString().padStart(2,'0');
-const isBreak = timerMode==='break';
-document.getElementById('timer-display').textContent = `${m}:${s}`;
-document.getElementById('timer-display').className = 'timer-time'+(isBreak?' is-break':'');
-document.getElementById('timer-phase-label').textContent = isBreak?'BREAK':'WORK';
+const total = getTotal(), secs = Math.min(timerSeconds, total);
+const m = Math.floor(secs/60).toString().padStart(2,'0');
+const s = (secs%60).toString().padStart(2,'0');
+const isBreak = timerMode==='break', paused = !timerRunning && secs < total;
+const phase = paused ? 'PAUSED' : isBreak ? 'BREAK' : 'WORK';
+const ends = timerRunning && timerEndAt ? 'ends ' + new Date(timerEndAt).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }).toLowerCase().replace(' ', '') : '';
+const disp = document.getElementById('timer-display'); if (!disp) return;
+disp.textContent = `${m}:${s}`;
+disp.className = 'timer-time'+(isBreak?' is-break':'');
+document.getElementById('timer-phase-label').textContent = phase;
 document.getElementById('timer-phase-label').className = 'timer-phase-label'+(isBreak?' is-break':'');
 const fill = document.getElementById('timer-ring-fill');
-fill.style.strokeDashoffset = 741.4 * (1 - timerSeconds / getTotal());
+fill.style.strokeDashoffset = 741.4 * (1 - secs / total);
 fill.className = 'timer-ring-fill'+(isBreak?' is-break':'');
+const ring = document.getElementById('fx-ring');
+if (ring) { ring.classList.toggle('is-running', timerRunning); ring.classList.toggle('is-paused', paused); }
+const endsEl = document.getElementById('fx-ends'); if (endsEl) endsEl.textContent = ends;
 const btn = document.getElementById('play-btn');
-if (btn) btn.className = 'timer-btn timer-btn-play'+(isBreak?' is-break':'');
+if (btn) { btn.className = 'timer-btn timer-btn-play'+(isBreak?' is-break':''); btn.innerHTML = timerRunning ? '⏸' : '▶'; }
 document.title = timerRunning ? `${m}:${s} · EXEC` : 'EXEC';
-}
-function toggleTimer() {
-const btn = document.getElementById('play-btn');
-if (timerRunning) { clearInterval(timerInterval); timerRunning = false; btn.innerHTML = '▶'; document.title = 'EXEC'; }
-else {
-timerRunning = true; btn.innerHTML = '⏸';
-if (timerMode === 'work' && !sessionStartTime) sessionStartTime = Date.now();
-timerInterval = setInterval(() => {
-timerSeconds--;
-updateTimerDisplay();
-if (timerSeconds <= 0) {
-clearInterval(timerInterval); timerRunning = false; btn.innerHTML = '▶'; document.title = 'EXEC';
-if (timerMode==='work') { pomoDone++; updatePomodots(); const selId = document.getElementById('focus-task-select').value; const task = state.tasks.find(t => t.id===selId); const actualMins = sessionStartTime ? Math.round((Date.now()-sessionStartTime)/60000) : workMins; logSession(task?task.title:'Unassigned', actualMins); sessionStartTime = null; timerMode = 'break'; }
-else { timerMode = 'work'; sessionStartTime = null; }
-timerSeconds = getTotal(); updateTimerDisplay(); playDing();
-}
-}, 1000);
+const full = document.getElementById('fx-full');
+if (full && _fxFull) {
+  full.classList.toggle('is-break', isBreak); full.classList.toggle('is-running', timerRunning); full.classList.toggle('is-paused', paused);
+  const t = state.tasks.find(x => x.id === focusTaskId);
+  document.getElementById('fxf-phase').textContent = phase;
+  document.getElementById('fxf-time').textContent = `${m}:${s}`;
+  document.getElementById('fxf-ends').textContent = ends;
+  document.getElementById('fxf-task').textContent = isBreak ? 'Step away. Breathe.' : (t ? t.title : 'No task picked');
+  document.getElementById('fxf-done').textContent = !isBreak && t && t.doneWhen ? '✓ Done when: ' + t.doneWhen : '';
+  document.getElementById('fxf-play').innerHTML = timerRunning ? '⏸' : '▶';
+  document.getElementById('fxf-bar-fill').style.width = (100 * (1 - secs / total)) + '%';
 }
 }
-function skipPhase() {
-clearInterval(timerInterval); timerRunning = false; document.getElementById('play-btn').innerHTML = '▶';
-if (timerMode==='work') { pomoDone++; updatePomodots(); const selId = document.getElementById('focus-task-select').value; const task = state.tasks.find(t => t.id===selId); const actualMins = sessionStartTime ? Math.round((Date.now()-sessionStartTime)/60000) : workMins; logSession(task?task.title:'Unassigned', actualMins); sessionStartTime = null; timerMode = 'break'; }
-else { timerMode = 'work'; sessionStartTime = null; }
-timerSeconds = getTotal(); updateTimerDisplay();
-}
-function resetTimer() { clearInterval(timerInterval); timerRunning = false; timerMode = 'work'; timerSeconds = workMins*60; sessionStartTime = null; document.getElementById('play-btn').innerHTML = '▶'; document.title = 'EXEC'; updateTimerDisplay(); }
 function updatePomodots() {
 const el = document.getElementById('pomo-dots'); if (!el) return;
-el.innerHTML = Array.from({length: Math.max(pomoDone,4)}, (_,i) => `<div class="pomo-pip ${i<pomoDone?'done':''}"></div>`).join('') + `<span style="font-family:var(--sans);font-size:12px;color:var(--text3);margin-left:10px">${pomoDone} today</span>`;
+const todays = (state.focusSessions || []).filter(s => s.date === today());
+const n = todays.length, mins = todays.reduce((x, s) => x + (Number(s.mins) || 0), 0);
+el.innerHTML = Array.from({length: Math.max(n,4)}, (_,i) => `<div class="pomo-pip ${i<n?'done':''}"></div>`).join('') + `<span style="font-family:var(--sans);font-size:12px;color:var(--text3);margin-left:10px">${n} today${mins ? ' · ' + schedDur(mins) : ''}</span>`;
 }
+function focusFullscreen(on) {
+const el = document.getElementById('fx-full'); if (!el) return;
+if (on) {
+  if (el.parentNode !== document.body) document.body.appendChild(el);
+  el.style.display = 'flex'; _fxFull = true;
+  try { if (document.documentElement.requestFullscreen && !document.fullscreenElement) document.documentElement.requestFullscreen().catch(() => {}); } catch(e) {}
+} else {
+  el.style.display = 'none'; _fxFull = false;
+  try { if (document.fullscreenElement && document.exitFullscreen) document.exitFullscreen().catch(() => {}); } catch(e) {}
+}
+updateTimerDisplay(); focusWake();
+}
+// Keep the screen on while a session runs in full screen
+async function focusWake() {
+const want = _fxFull && timerRunning && !document.hidden;
+try {
+  if (want && !_fxWake && navigator.wakeLock) { _fxWake = await navigator.wakeLock.request('screen'); _fxWake.addEventListener('release', () => { _fxWake = null; }); }
+  else if (!want && _fxWake) { const w = _fxWake; _fxWake = null; await w.release(); }
+} catch(e) { _fxWake = null; }
+}
+document.addEventListener('fullscreenchange', () => { if (!document.fullscreenElement && _fxFull) focusFullscreen(false); });
+document.addEventListener('visibilitychange', () => { if (!document.hidden) focusTick(); focusWake(); });
+document.addEventListener('keydown', e => {
+if (!_fxFull) return;
+if (e.key === 'Escape') { e.preventDefault(); focusFullscreen(false); }
+else if (e.code === 'Space') { e.preventDefault(); toggleTimer(); }
+});
 function playDing() {
 try { const ctx = new (window.AudioContext||window.webkitAudioContext)(); const o = ctx.createOscillator(); const g = ctx.createGain(); o.connect(g); g.connect(ctx.destination); o.frequency.setValueAtTime(660,ctx.currentTime); o.frequency.setValueAtTime(880,ctx.currentTime+0.1); g.gain.setValueAtTime(0.25,ctx.currentTime); g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+0.4); o.start(); o.stop(ctx.currentTime+0.4); } catch(e) {}
 }
-function logSession(taskTitle, actualMins) {
+function logSession(taskTitle, actualMins, extra) {
+extra = extra || {};
 const mins = actualMins || workMins;
-const log = document.getElementById('focus-session-log');
-const now = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-if (log) { const entry = document.createElement('div'); entry.className = 'session-log-entry'; entry.innerHTML = `<div class="log-dot"></div><span style="color:var(--text3);font-family:var(--sans);font-size:12px">${now}</span><span style="flex:1">${mins}min · <strong>${escHtml(taskTitle)}</strong></span>`; log.prepend(entry); }
-snapshot();
+const at = new Date(extra.at || Date.now());
+const day = at.getFullYear() + '-' + String(at.getMonth()+1).padStart(2,'0') + '-' + String(at.getDate()).padStart(2,'0');
 if (!state.focusSessions) state.focusSessions = [];
-state.focusSessions.push({ date: today(), task: taskTitle, time: now, mins: mins });
-save(); renderDashboard();
+if (extra.id && state.focusSessions.some(s => s.id === extra.id)) return;   // already saved (another tab)
+snapshot();
+const rec = { date: day, task: taskTitle, time: at.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }), mins: mins };
+if (extra.id) rec.id = extra.id;
+if (extra.taskId) rec.taskId = extra.taskId;
+if (extra.partial) rec.partial = true;
+state.focusSessions.push(rec);
+save(); renderDashboard(); renderFocusLog(); updatePomodots();
+const det = document.getElementById('fx-task-detail');
+if (det && document.getElementById('section-focus').classList.contains('active')) renderFocusSelect();
 }
 const dailyChecklist = [
 { id: 'dc1', label: 'Process email inbox to zero', group: 'Inboxes' },
@@ -3307,14 +3552,10 @@ function schedStart(key, id) {
   const b = (schedData().days[key] || []).find(x => x.id === id); if (!b) return;
   const focusTab = document.querySelectorAll('.nav-tab')[3];
   if (timerRunning) { showSection('focus', focusTab); flashUndoHint('A Focus session is already running'); return; }
+  if (focusWorkedMs() > 0) resetTimer();   // a paused session is saved first
+  if (b.taskId && state.tasks.some(x => x.id === b.taskId)) focusPickTask(b.taskId);
   showSection('focus', focusTab);
-  const sel = document.getElementById('focus-task-select');
-  if (b.taskId) {
-    const t = state.tasks.find(x => x.id === b.taskId);
-    if (t && ![...sel.options].some(o => o.value === t.id)) { const o = document.createElement('option'); o.value = t.id; o.textContent = t.title; sel.appendChild(o); }
-    if (t) sel.value = t.id;
-  }
-  workMins = b.mins; timerMode = 'work'; timerSeconds = b.mins * 60; sessionStartTime = null;
+  workMins = b.mins; timerMode = 'work'; timerSeconds = b.mins * 60; timerEndAt = 0; sessionStartTime = null;
   document.querySelectorAll('.focus-time-btn').forEach(x => x.classList.remove('active'));
   updateTimerDisplay();
   toggleTimer();
