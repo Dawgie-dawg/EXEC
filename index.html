@@ -263,6 +263,29 @@
     </div>
   </div>
 </div>
+<!-- BLOCK MODAL -->
+<div class="modal-overlay" id="block-modal">
+  <div class="modal" style="width:500px;max-width:94vw">
+    <div class="modal-title" id="block-modal-title">Add Block</div>
+    <div class="input-row">
+      <input type="text" id="block-title" placeholder="What is this block for?" style="width:100%;flex:unset">
+    </div>
+    <div class="input-row">
+      <div style="flex:1"><label>Type</label><select id="block-type"></select></div>
+      <div style="flex:1"><label>Task (optional)</label><select id="block-task" onchange="blockTaskPicked()"></select></div>
+    </div>
+    <div class="input-row">
+      <div style="flex:1"><label>Date</label><input type="date" id="block-date"></div>
+      <div style="flex:1"><label>Start</label><input type="time" id="block-start" step="900"></div>
+      <div style="flex:1"><label>Length (min)</label><input type="number" id="block-mins" min="5" step="15"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" id="block-delete-btn" onclick="deleteBlock()" style="margin-right:auto;color:var(--red)">Delete</button>
+      <button class="btn btn-ghost" onclick="closeModal('block-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveBlock()">Save</button>
+    </div>
+  </div>
+</div>
 <!-- EDIT TASK MODAL -->
 <div class="modal-overlay" id="edit-task-modal">
   <div class="modal" style="width:560px;max-width:94vw">
@@ -466,6 +489,7 @@
     <button class="nav-tab" onclick="showSection('projects', this)"><span class="tab-dot" style="background:#00d2d3"></span>Projects</button>
     <button class="nav-tab" onclick="showSection('notes', this)"><span class="tab-dot" style="background:#ff6b9d"></span>Notes<span class="capture-badge" id="notes-nav-badge"></span></button>
     <button class="nav-tab" onclick="showSection('review', this)"><span class="tab-dot" style="background:#f1c40f"></span>Review</button>
+    <button class="nav-tab" onclick="showSection('schedule', this)"><span class="tab-dot" style="background:#5dade2"></span>Schedule</button>
   </div>
 </div>
 <div id="scroll-container">
@@ -603,10 +627,94 @@
   <div id="review-steps"></div>
   <div style="display:flex;gap:10px;margin-top:8px" id="review-nav-btns"></div>
 </div>
+<!-- SCHEDULE -->
+<div class="section" id="section-schedule">
+  <style>
+  .sched-bar{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+  .sched-nav{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+  .sched-date-label{font-family:var(--sans);font-size:14px;color:var(--text2);margin-left:6px}
+  .sched-seg{display:flex;background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:2px;gap:2px}
+  .sched-workday{font-family:var(--sans);font-size:12px;color:var(--text3);margin-bottom:16px;display:flex;align-items:center;gap:6px}
+  .sched-workday select{font-size:12px;padding:3px 6px;min-width:0;flex:unset}
+  .sched-day{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(0,1fr);gap:18px;align-items:start}
+  .sched-tl-wrap{padding-top:8px}
+  .sched-tl{position:relative;user-select:none;-webkit-user-select:none}
+  .sched-work{position:absolute;left:46px;right:0;background:color-mix(in srgb,var(--accent) 8%,transparent);border-radius:4px;pointer-events:none}
+  .sched-hr{position:absolute;left:0;right:0;border-top:1px solid var(--border);pointer-events:none}
+  .sched-hr span{position:absolute;top:-8px;left:0;font-family:var(--sans);font-size:11px;color:var(--text3);background:var(--bg);padding-right:4px}
+  .sched-blk{position:absolute;left:50px;right:4px;border-radius:0 6px 6px 0;border-left:3px solid var(--c);background:color-mix(in srgb,var(--c) 16%,var(--bg2));padding:4px 8px;display:flex;justify-content:space-between;gap:6px;overflow:hidden;cursor:pointer;font-family:var(--sans);font-size:12px;color:var(--text);z-index:1;box-sizing:border-box}
+  .sched-blk:hover{background:color-mix(in srgb,var(--c) 26%,var(--bg2))}
+  .sched-blk-main{display:flex;flex-direction:column;min-width:0}
+  .sched-blk-main>span{flex-shrink:0}
+  .sched-blk.small .sched-blk-main{flex-direction:row;align-items:center;white-space:nowrap;gap:4px}
+  .sched-blk-type{font-weight:600;color:var(--c)}
+  .sched-blk-title{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .sched-blk-time{color:var(--text3);font-size:11px;font-weight:400;margin-left:6px}
+  .sched-blk-side{display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0}
+  .sched-blk.small .sched-blk-side{flex-direction:row;align-items:center}
+  .sched-blk-done{font-size:11px;color:var(--green);white-space:nowrap}
+  .sched-start{padding:2px 8px!important;font-size:11px!important}
+  .sched-now{position:absolute;left:40px;right:0;height:0;border-top:2px solid var(--red);z-index:2;pointer-events:none}
+  .sched-now:before{content:'';position:absolute;left:-5px;top:-6px;width:10px;height:10px;border-radius:50%;background:var(--red)}
+  .sched-tl.compact{background:var(--bg2);border-radius:6px}
+  .sched-tl.compact .sched-work,.sched-tl.compact .sched-now{left:0}
+  .sched-tl.compact .sched-blk{left:1px;right:1px;padding:1px 4px;font-size:11px}
+  .sched-panel{display:flex;flex-direction:column;gap:14px}
+  .sched-t5{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border);font-family:var(--sans);font-size:13px;cursor:grab}
+  .sched-t5:last-child{border-bottom:none}
+  .sched-t5-title{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text)}
+  .sched-t5-title.done{color:var(--text3);text-decoration:line-through}
+  .sched-t5-est{color:var(--text3);font-size:12px;white-space:nowrap}
+  .sched-meter{height:6px;border-radius:3px;background:var(--bg4);overflow:hidden;margin-top:6px}
+  .sched-meter>div{height:100%;border-radius:3px}
+  .sched-row-label{display:flex;justify-content:space-between;gap:8px;font-family:var(--sans);font-size:12px;color:var(--text2);margin-top:10px}
+  .sched-note{font-family:var(--sans);font-size:12px;margin-top:10px;line-height:1.5}
+  .sched-empty{font-family:var(--sans);font-size:12px;color:var(--text3);font-style:italic;padding:8px 0;line-height:1.5}
+  .sched-week-wrap{overflow-x:auto}
+  .sched-week{display:grid;grid-template-columns:40px repeat(7,minmax(0,1fr));column-gap:4px;row-gap:8px;min-width:620px}
+  .sched-axis{position:relative}
+  .sched-axis div{position:absolute;left:0;transform:translateY(-7px);font-family:var(--sans);font-size:11px;color:var(--text3)}
+  .sched-wk-head{font-family:var(--sans);font-size:12px;padding:6px;border-radius:6px;background:var(--bg2);border:1px solid var(--border);cursor:pointer;min-width:0}
+  .sched-wk-head.today{border-color:var(--accent)}
+  .sched-wk-dow{font-weight:600;color:var(--text)}
+  .sched-wk-theme{color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:2px}
+  .sched-wk-booked{color:var(--text3);font-size:11px;margin-top:2px;min-height:14px}
+  @media (max-width:768px){.sched-day{grid-template-columns:1fr}.sched-panel{order:-1}}
+  .dash-sched-row{display:flex;align-items:center;gap:10px;padding:8px 16px;border-bottom:1px solid var(--border);font-family:var(--sans);font-size:13px}
+  .dash-sched-row:last-child{border-bottom:none}
+  .dash-sched-row.is-now{background:color-mix(in srgb,var(--c) 10%,transparent)}
+  .dash-sched-row.is-past{opacity:0.45}
+  .dash-sched-time{width:52px;flex-shrink:0;color:var(--text3);font-size:12px}
+  .dash-sched-dot{width:8px;height:8px;border-radius:50%;background:var(--c);flex-shrink:0}
+  .dash-sched-type{color:var(--c);font-weight:600;font-size:12px;flex-shrink:0}
+  .dash-sched-title{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text)}
+  .dash-sched-done{font-size:11px;color:var(--green);white-space:nowrap}
+  .dash-sched-badge{font-size:10px;font-weight:700;color:#fff;padding:1px 6px;border-radius:3px;letter-spacing:0.5px;flex-shrink:0}
+  </style>
+  <div class="section-header">
+    <div class="section-title">Schedule</div>
+    <button class="btn btn-primary" onclick="openBlockModal(schedDate||today(),null,null)">+ Add Block</button>
+  </div>
+  <div class="sched-bar">
+    <div class="sched-nav">
+      <button class="btn btn-ghost btn-sm" onclick="schedStep(-1)" title="Back">‹</button>
+      <button class="btn btn-ghost btn-sm" onclick="schedGo(today())">Today</button>
+      <button class="btn btn-ghost btn-sm" onclick="schedStep(1)" title="Forward">›</button>
+      <span id="sched-date-label" class="sched-date-label"></span>
+    </div>
+    <div class="sched-nav">
+      <div class="sched-seg"><button class="sort-view-btn sched-view-btn active" data-v="day" onclick="schedGo(schedDate,'day')">Day</button><button class="sort-view-btn sched-view-btn" data-v="week" onclick="schedGo(schedDate,'week')">Week</button></div>
+      <button class="btn btn-ghost btn-sm" onclick="schedApplyIdeal()" title="Copy your ideal week into the empty days of this week">Apply ideal week</button>
+      <button class="btn btn-ghost btn-sm" onclick="schedSaveIdeal()" title="Save this week's blocks as your ideal week">Save as ideal week</button>
+    </div>
+  </div>
+  <div class="sched-workday">Workday <select id="sched-work-start" onchange="schedSetWork()"></select> to <select id="sched-work-end" onchange="schedSetWork()"></select></div>
+  <div id="schedule-body"></div>
+</div>
 <script>
 let state = {
 brainItems: [], tasks: [], projects: [], notes: [],
-focusSessions: [], reviewLogs: {}, todays5: {}, checklistState: {}, dayThemes: {},
+focusSessions: [], reviewLogs: {}, todays5: {}, checklistState: {}, dayThemes: {}, timeBlocks: {},
 archivedTasks: [], archivedNotes: [], archivedCaptures: [], archivedProjects: []
 };
 const undoStack = [], redoStack = [];
@@ -640,6 +748,8 @@ updateUndoRedoUI(); flashUndoHint('Redo ✓');
 function refreshAllViews() {
 renderDashboard(); renderBrainDump(); renderTasks();
 renderProjects(); renderNotes(); renderFocusSelect();
+const _sch = document.getElementById('section-schedule');
+if (_sch && _sch.classList.contains('active')) renderSchedule();
 }
 function updateUndoRedoUI() {
 const u = document.getElementById('undo-btn'), r = document.getElementById('redo-btn');
@@ -666,6 +776,11 @@ const _supa = supabase.createClient(SUPA_URL, SUPA_KEY);
 let _currentUser = null;
 let _saveTimer = null;
 let _booted = false;
+// A change waiting to save, a save on its way, and the stamps of our own
+// saves: the realtime reload skips all three, so it can't put back an
+// older copy over a tap that hasn't saved yet (TODAY needing several presses).
+let _savePending = false, _saveInFlight = 0, _localRev = 0;
+const _myStamps = [];
 
 // ── Multi-tab sync via BroadcastChannel ──
 const _tabId = Math.random().toString(36).slice(2);
@@ -685,10 +800,36 @@ if (_bc) {
 function save() {
   localStorage.setItem('exec_state', JSON.stringify(state));
   if (_bc) _bc.postMessage({ type: 'state_update', tabId: _tabId, state: JSON.stringify(state) });
+  _localRev++;
   if (!_currentUser) return;
+  _savePending = true;
   clearTimeout(_saveTimer);
   setSyncDot('syncing');
   _saveTimer = setTimeout(_pushToSupabase, 1500);
+}
+
+// ── Upsert app_state, with Schedule blocks in the time_blocks column ──
+// Until that column exists in Supabase, saves go without it (blocks then
+// stay on this device) so every other save keeps working.
+let _tbColMissing = false;
+async function _upsertAppState(payload) {
+  if (!_tbColMissing) payload.time_blocks = state.timeBlocks || {};
+  _savePending = false;
+  _saveInFlight++;
+  _myStamps.push(Date.parse(payload.updated_at));
+  if (_myStamps.length > 20) _myStamps.shift();
+  try {
+    let res = await _supa.from('app_state').upsert(payload, { onConflict: 'user_id' });
+    if (res.error && !_tbColMissing && /time_blocks/.test(res.error.message || '')) {
+      _tbColMissing = true;
+      delete payload.time_blocks;
+      console.warn('[EXEC] No time_blocks column in app_state — Schedule saved on this device only');
+      res = await _supa.from('app_state').upsert(payload, { onConflict: 'user_id' });
+    }
+    return res;
+  } finally {
+    _saveInFlight--;
+  }
 }
 
 async function _pushToSupabase() {
@@ -718,7 +859,7 @@ async function _pushToSupabase() {
       day_themes: state.dayThemes || {},
       updated_at: new Date().toISOString()
     };
-    const { error } = await _supa.from('app_state').upsert(payload, { onConflict: 'user_id' });
+    const { error } = await _upsertAppState(payload);
     if (error) {
       console.error('[EXEC] Save error:', error.message);
       // Treat any error as offline — queue for retry
@@ -737,9 +878,10 @@ async function _pushToSupabase() {
 }
 
 // ── Load ──
-async function loadFromSupabase(userId, fallbackToLocal) {
+async function loadFromSupabase(userId, fallbackToLocal, rev) {
   try {
     const { data, error } = await _supa.from('app_state').select('*').eq('user_id', userId).maybeSingle();
+    if (rev !== undefined && rev !== _localRev) return false; // changed here while loading — keep ours
     if (error) {
       console.error('[EXEC] Load error:', error.message);
       // Only fall back to localStorage on initial boot, not realtime updates
@@ -761,6 +903,7 @@ async function loadFromSupabase(userId, fallbackToLocal) {
     state.todays5          = data.todays5           || {};
     state.checklistState   = data.checklist_state   || {};
     state.dayThemes        = data.day_themes        || {};
+    if (data.time_blocks && data.time_blocks.days) state.timeBlocks = data.time_blocks;
     // Cache cloud data to localStorage so it's available offline
     localStorage.setItem('exec_state', JSON.stringify(state));
     // Update sync status in settings
@@ -784,7 +927,10 @@ function _subscribeRealtime(userId) {
     }, async (payload) => {
       // Another device saved — pull latest (no localStorage fallback)
       if (_toggleRenderTimer) return; // tasks mid-animation, skip remote refresh
-      const loaded = await loadFromSupabase(userId, false);
+      const stamp = Date.parse((payload && payload.new && payload.new.updated_at) || '');
+      if (stamp && _myStamps.includes(stamp)) return; // our own save coming back
+      if (_savePending || _saveInFlight) return; // our newer change is still saving
+      const loaded = await loadFromSupabase(userId, false, _localRev);
       if (loaded) refreshAllViews();
     })
     .subscribe((status) => {
@@ -926,7 +1072,7 @@ async function authSignOut() {
   document.getElementById('auth-submit-btn').disabled = false;
   document.getElementById('auth-msg').textContent = '';
   document.getElementById('auth-overlay').style.display = 'flex';
-  state = { brainItems:[], tasks:[], projects:[], notes:[], focusSessions:[], reviewLogs:{}, todays5:{}, checklistState:{}, dayThemes:{}, archivedTasks:[], archivedNotes:[], archivedCaptures:[], archivedProjects:[] };
+  state = { brainItems:[], tasks:[], projects:[], notes:[], focusSessions:[], reviewLogs:{}, todays5:{}, checklistState:{}, dayThemes:{}, timeBlocks:{}, archivedTasks:[], archivedNotes:[], archivedCaptures:[], archivedProjects:[] };
   refreshAllViews();
 }
 
@@ -952,7 +1098,9 @@ function save() {
   localStorage.setItem('exec_state', JSON.stringify(state));
   // Broadcast state to other tabs immediately
   if (_bc) _bc.postMessage({ type: 'state_update', tabId: _tabId, state: JSON.stringify(state) });
+  _localRev++;
   if (!_currentUser) return;
+  _savePending = true;
   clearTimeout(_saveTimer);
   setSyncDot('syncing');
   _saveTimer = setTimeout(() => _pushToSupabase(), 1000);
@@ -962,7 +1110,7 @@ async function _pushToSupabase() {
   if (!_currentUser) return;
   // Any tab can save — removed leader restriction since we fixed the lock issue
   try {
-    const { error } = await _supa.from('app_state').upsert({
+    const { error } = await _upsertAppState({
       user_id: _currentUser.id,
       tasks: state.tasks,
       projects: state.projects,
@@ -979,7 +1127,7 @@ async function _pushToSupabase() {
       checklist_state: state.checklistState || {},
       day_themes: state.dayThemes || {},
       updated_at: new Date().toISOString()
-    }, { onConflict: 'user_id' });
+    });
     if (error) {
       console.error('[EXEC] Save error:', error.message);
       localStorage.setItem('exec_pending_sync', '1');
@@ -995,10 +1143,11 @@ async function _pushToSupabase() {
 }
 
 // ── Load from Supabase ──
-async function loadFromSupabase(userId) {
+async function loadFromSupabase(userId, fallbackToLocal, rev) {
   try {
     const { data, error } = await _supa.from('app_state')
       .select('*').eq('user_id', userId).maybeSingle();
+    if (rev !== undefined && rev !== _localRev) return false; // changed here while loading — keep ours
     if (error) { console.error('[EXEC] Load error:', error); return false; }
     if (!data) { console.log('[EXEC] No data found in Supabase yet'); return false; }
     state.tasks            = data.tasks            || [];
@@ -1015,6 +1164,7 @@ async function loadFromSupabase(userId) {
     state.todays5          = data.todays5           || {};
     state.checklistState   = data.checklist_state   || {};
     state.dayThemes        = data.day_themes        || {};
+    if (data.time_blocks && data.time_blocks.days) state.timeBlocks = data.time_blocks;
     return true;
   } catch(e) { console.error('[EXEC] Load exception:', e); return false; }
 }
@@ -1253,6 +1403,7 @@ if (id === 'notes') renderNotes();
 if (id === 'focus') renderFocusSelect();
 if (id === 'review') renderReview();
 if (id === 'braindump') renderBrainDump();
+if (id === 'schedule') renderSchedule();
 }
 function openQuickAdd() {
 document.getElementById('quick-add-overlay').classList.add('active');
@@ -1434,6 +1585,7 @@ document.getElementById('task-modal').dataset.captureId = '';
 renderBrainDump(); updateNavMetrics();
 }
 save(); closeModal('task-modal'); document.getElementById('task-title-input').value = ''; document.getElementById('task-donewhen').value = ''; renderTasks();
+if (document.getElementById('section-review').classList.contains('active')) renderReview();
 flashUndoHint('Task added ✓');
 }
 function setFilter(f, btn) {
@@ -2215,6 +2367,7 @@ const dailySteps = [
 { prompt: "What didn't happen, and why?", sub: "No judgment. Just facts. Understanding the why is the useful part.", ph: "Didn't get to..." },
 { prompt: "Anything still rattling around in your head?", sub: "Get it out. If it's in here, your brain won't let go of it tonight.", ph: "I keep thinking about..." },
 { prompt: "Tomorrow's #1", sub: "One thing. Decide it now so you wake up with a target instead of a question mark.", ph: "Tomorrow I must..." },
+{ prompt: "Plan tomorrow", sub: "Pick tomorrow's 5 now. Unfinished ones from today are at the top.", type: 'plan' },
 ];
 const weeklySteps = [
 { prompt: "Weekly System Reset Checklist", sub: "Clear every surface, process every inbox, organize every loose end. This is your full system reset.", type: 'checklist', items: weeklyChecklist },
@@ -2242,6 +2395,7 @@ const groups = [], groupMap = {};
 s.items.forEach(item => { if (!groupMap[item.group]) { groupMap[item.group]=[]; groups.push(item.group); } groupMap[item.group].push(item); });
 const total = s.items.length, done = s.items.filter(item => state.checklistState[ck][item.id]).length, pct = Math.round(done/total*100);
 stepContent = `<div style="margin-bottom:16px"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px"><span style="font-family:var(--sans);font-size:12px;color:var(--text3)">${done} of ${total} complete</span><span class="checklist-progress-pct" style="font-family:var(--sans);font-size:12px;color:${pct===100?'var(--green)':'var(--text3)'}">${pct}%</span></div><div style="height:4px;background:var(--bg4);border-radius:2px"><div class="checklist-progress-bar" style="height:4px;background:${pct===100?'var(--green)':'var(--accent)'};border-radius:2px;width:${pct}%;transition:width 0.3s"></div></div></div>${groups.map(group=>`<div style="margin-bottom:20px"><div style="font-family:var(--sans);font-size:12px;color:var(--text3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border)">${group}</div>${groupMap[group].map(item=>`<div class="checklist-item ${state.checklistState[ck][item.id]?'checked':''}" onclick="toggleChecklistItem('${ck}','${item.id}')"><div class="checklist-box ${state.checklistState[ck][item.id]?'checked':''}">${state.checklistState[ck][item.id]?'✓':''}</div><span class="checklist-label">${item.label}</span></div>`).join('')}</div>`).join('')}`;
+} else if (s.type==='plan') { stepContent = planTomorrowHtml();
 } else { stepContent = `<textarea class="review-textarea" placeholder="${s.ph||''}" style="width:100%;min-height:100px" oninput="saveReviewAnswer(${reviewStep}, this.value)">${state.reviewLogs[key][reviewStep]||''}</textarea>`; }
 document.getElementById('review-steps').innerHTML = `<div class="review-step active"><div class="review-step-num">STEP ${reviewStep+1} OF ${steps.length}</div><div class="review-prompt">${s.prompt}</div><div class="review-sub">${s.sub}</div>${stepContent}</div>`;
 document.getElementById('review-nav-btns').innerHTML = `${reviewStep>0?`<button class="btn btn-ghost" onclick="reviewNav(-1)">← Back</button>`:'<div></div>'}${reviewStep<steps.length-1?`<button class="btn btn-primary" onclick="reviewNav(1)">Next →</button>`:`<button class="btn btn-green" onclick="finishReview()">✓ Complete Review</button>`}`;
@@ -2272,6 +2426,58 @@ if (countEl) countEl.textContent = `${done} of ${total} complete`;
 if (pctEl)   { pctEl.textContent = `${pct}%`; pctEl.style.color = pct===100 ? 'var(--green)' : 'var(--text3)'; }
 if (barEl)   { barEl.style.width = pct + '%'; barEl.style.background = pct===100 ? 'var(--green)' : 'var(--accent)'; }
 }
+}
+// ── Evening Review: Plan tomorrow (tomorrow's 5, kept under todays5_<tomorrow>) ──
+function planTomorrowKey() { return 'todays5_' + schedShift(today(), 1); }
+function planTomorrowList() {
+if (!state.todays5) state.todays5 = {};
+const key = planTomorrowKey();
+if (!state.todays5[key]) {
+  // first visit: carry over today's unfinished Today's 5
+  state.todays5[key] = getTodays5().filter(id => { const t = state.tasks.find(x => x.id === id); return t && !t.done; });
+  save();
+}
+state.todays5[key] = state.todays5[key].filter(id => state.tasks.find(t => t.id === id && !t.done));
+return state.todays5[key];
+}
+function planTomorrowHtml() {
+const picked = planTomorrowList(), tmr = schedShift(today(), 1);
+const carried = getTodays5().map(id => state.tasks.find(t => t.id === id)).filter(t => t && !t.done);
+const others = state.tasks.filter(t => !t.done && t.someday !== 'yes' && !carried.includes(t))
+  .sort((a, b) => priorityOrder(a.priority) - priorityOrder(b.priority) || (a.created || 0) - (b.created || 0));
+const est = picked.reduce((s, id) => s + (Number((state.tasks.find(t => t.id === id) || {}).est) || 0), 0);
+const row = (t, tag) => { const on = picked.includes(t.id); return `<div class="checklist-item ${on ? 'checked' : ''}" onclick="planTomorrowToggle('${t.id}')"><div class="checklist-box ${on ? 'checked' : ''}">${on ? '✓' : ''}</div><span class="checklist-label" style="flex:1;text-decoration:none;color:var(--text)">${escHtml(t.title)}${tag ? ` <span style="font-size:11px;padding:1px 7px;border-radius:4px;background:rgba(243,156,18,0.15);color:var(--orange);margin-left:6px">carried over</span>` : ''}</span><span style="font-family:var(--sans);font-size:12px;color:var(--text3);white-space:nowrap">${t.est ? schedDur(Number(t.est)) : 'no est.'}</span></div>`; };
+const head = txt => `<div style="font-family:var(--sans);font-size:12px;color:var(--text3);text-transform:uppercase;letter-spacing:0.1em;margin:16px 0 8px;padding-bottom:6px;border-bottom:1px solid var(--border)">${txt}</div>`;
+return `<div style="display:flex;justify-content:space-between;align-items:center;font-family:var(--sans);font-size:13px;margin-bottom:4px;gap:8px;flex-wrap:wrap"><span style="color:var(--text2)">${schedParse(tmr).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</span><span style="color:${picked.length ? 'var(--accent)' : 'var(--text3)'}">${picked.length} of ${MAX_TODAY} picked${est ? ' · ' + schedDur(est) : ''}</span></div>
+${carried.length ? head('Unfinished today') + carried.map(t => row(t, true)).join('') : ''}
+${head('Other tasks')}${others.map(t => row(t, false)).join('') || '<div style="font-family:var(--sans);font-size:12px;color:var(--text3);font-style:italic;padding:6px 0">No other open tasks.</div>'}
+<div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap"><button class="btn btn-ghost" onclick="openModal('task-modal')">+ Add Task</button><button class="btn btn-ghost" onclick="planTomorrowPlace()">Place into tomorrow's schedule</button><button class="btn btn-ghost" onclick="planTomorrowOpen()">Open tomorrow in Schedule</button></div>`;
+}
+function planTomorrowToggle(id) {
+const list = planTomorrowList();
+if (!list.includes(id) && list.length >= MAX_TODAY) { flashUndoHint("Tomorrow's 5 is full!"); return; }
+snapshot();
+state.todays5[planTomorrowKey()] = list.includes(id) ? list.filter(x => x !== id) : [...list, id];
+save(); renderReview();
+}
+function planTomorrowPlace() {
+const tmr = schedShift(today(), 1), d = schedData();
+const todo = planTomorrowList().map(id => state.tasks.find(t => t.id === id)).filter(t => t && !(d.days[tmr] || []).some(b => b.taskId === t.id));
+if (!todo.length) { flashUndoHint(planTomorrowList().length ? 'Already in tomorrow\'s schedule' : "Pick tomorrow's 5 first"); return; }
+snapshot();
+let placed = 0;
+todo.forEach(t => {
+  const len = Number(t.est) || 30, start = schedFreeSlot(tmr, len);
+  if (start === null) return;
+  (d.days[tmr] = d.days[tmr] || []).push({ id: uid(), start, mins: len, type: schedTypeOf(t), title: t.title, taskId: t.id });
+  placed++;
+});
+save();
+flashUndoHint(placed === todo.length ? `Placed ${placed} ✓` : `Placed ${placed} · ${todo.length - placed} didn't fit in your workday`);
+}
+function planTomorrowOpen() {
+schedDate = schedShift(today(), 1); schedView = 'day';
+showSection('schedule', document.querySelectorAll('.nav-tab')[7]);
 }
 function saveReviewAnswer(stepIdx, val) { const key=`${reviewType}_${today()}`; if (!state.reviewLogs[key]) state.reviewLogs[key]={}; state.reviewLogs[key][stepIdx]=val; save(); }
 function reviewNav(dir) { const steps=reviewType==='daily'?dailySteps:weeklySteps; reviewStep=Math.max(0,Math.min(steps.length-1,reviewStep+dir)); renderReview(); }
@@ -2602,7 +2808,7 @@ const panel = document.createElement('div');
 panel.id = 'dash-row2-panel';
 panel.style.display = expanded ? 'grid' : 'none';
 panel.className = 'dash-grid-row2-inner';
-panel.innerHTML = `<div style="grid-column:1/-1">${dashWeekThemeStrip()}</div><div style="display:flex;flex-direction:column;gap:16px">${dashProjectsModule()}${dashCalendarModule()}</div><div>${dashCompletionModule()}</div>`;
+panel.innerHTML = `<div style="grid-column:1/-1">${dashScheduleModule()}</div><div style="grid-column:1/-1">${dashWeekThemeStrip()}</div><div style="display:flex;flex-direction:column;gap:16px">${dashProjectsModule()}${dashCalendarModule()}</div><div>${dashCompletionModule()}</div>`;
 row2.appendChild(panel);
 requestAnimationFrame(() => drawWeekGraph());
 }
@@ -2879,6 +3085,336 @@ function restoreArchivedTask(id) { snapshot(); const idx=(state.archivedTasks||[
 function restoreArchivedNote(id) { snapshot(); const idx=(state.archivedNotes||[]).findIndex(n=>n.id===id); if (idx===-1) return; const note={...state.archivedNotes[idx]}; delete note.archivedAt; state.notes.unshift(note); state.archivedNotes.splice(idx,1); save(); renderArchiveContent(); renderNotes(); flashUndoHint('Note restored ✓'); }
 function restoreArchivedCapture(id) { snapshot(); const idx=(state.archivedCaptures||[]).findIndex(c=>c.id===id); if (idx===-1) return; const item={...state.archivedCaptures[idx]}; delete item.processedAs; delete item.processedAt; state.brainItems.unshift(item); state.archivedCaptures.splice(idx,1); save(); renderArchiveContent(); renderBrainDump(); updateNavMetrics(); flashUndoHint('Capture restored ✓'); }
 function restoreArchivedProject(id) { snapshot(); const idx=(state.archivedProjects||[]).findIndex(p=>p.id===id); if (idx===-1) return; const proj={...state.archivedProjects[idx]}; delete proj.archivedAt; delete proj.taskSnapshot; const activeCount=state.projects.filter(p=>p.status!=='done').length; if (activeCount>=3) { flashUndoHint('3 project cap reached — mark one done first'); return; } state.projects.push(proj); state.archivedProjects.splice(idx,1); save(); renderArchiveContent(); renderProjects(); flashUndoHint('Project restored ✓'); }
+// ── Schedule: time blocks ──
+// state.timeBlocks = { days: { 'YYYY-MM-DD': [block] }, ideal: { dow: [block] }, workStart, workEnd }
+// block = { id, start (minutes from midnight), mins, type, title, taskId }
+const SCHED_TYPES = {
+  outreach:     { label: 'Outreach',     color: 'var(--accent)' },
+  deliverables: { label: 'Deliverables', color: 'var(--cyan)' },
+  meeting:      { label: 'Meeting',      color: 'var(--orange)' },
+  admin:        { label: 'Admin',        color: 'var(--text3)' },
+  break:        { label: 'Break',        color: 'var(--green)' },
+  personal:     { label: 'Personal',     color: 'var(--pink)' }
+};
+const SCHED_FROM = 6 * 60, SCHED_TO = 22 * 60, SCHED_PX = 48;
+let schedDate = null, schedView = 'day', _schedEditing = null, _schedNowTimer = null;
+function schedData() {
+  if (!state.timeBlocks || typeof state.timeBlocks !== 'object') state.timeBlocks = {};
+  const d = state.timeBlocks;
+  if (!d.days) d.days = {};
+  if (!d.ideal) d.ideal = {};
+  if (typeof d.workStart !== 'number') d.workStart = 9 * 60;
+  if (typeof d.workEnd !== 'number') d.workEnd = 17 * 60;
+  return d;
+}
+function schedKey(dt) { return dt.getFullYear() + '-' + String(dt.getMonth()+1).padStart(2,'0') + '-' + String(dt.getDate()).padStart(2,'0'); }
+function schedParse(key) { const [y,m,d] = key.split('-').map(Number); return new Date(y, m-1, d); }
+function schedShift(key, days) { const d = schedParse(key); d.setDate(d.getDate() + days); return schedKey(d); }
+function schedWeekStart(key) { const d = schedParse(key); d.setDate(d.getDate() - (d.getDay() + 6) % 7); return schedKey(d); }
+function schedBlocks(key) { return (schedData().days[key] || []).slice().sort((a,b) => a.start - b.start); }
+function schedClock(min) { const h = Math.floor(min / 60) % 24, m = min % 60; return (h % 12 || 12) + (m ? ':' + String(m).padStart(2,'0') : '') + (h >= 12 ? 'pm' : 'am'); }
+function schedDur(min) { min = Math.round(min); const h = Math.floor(min / 60), m = min % 60; return h ? h + 'h' + (m ? ' ' + m + 'm' : '') : m + 'm'; }
+function schedHHMM(min) { return String(Math.floor(min / 60)).padStart(2,'0') + ':' + String(min % 60).padStart(2,'0'); }
+function schedTypeOf(task) {
+  const tag = (task && task.tag) || '';
+  if (['Outreach','Follow-up','Lead Prospecting','Investor Prospecting'].includes(tag)) return 'outreach';
+  if (tag === 'Admin') return 'admin';
+  return 'deliverables';
+}
+function schedT5(key) {
+  if (key === today()) return getTodays5();
+  return ((state.todays5 || {})['todays5_' + key] || []).filter(id => state.tasks.find(t => t.id === id));
+}
+// Focus sessions log their END time and length; a session counts toward the
+// block for its task that it overlaps, else the block its middle falls in,
+// else the block named after its task.
+function schedSessions(key) {
+  return (state.focusSessions || []).filter(s => s.date === key).map(s => {
+    const m = String(s.time || '').match(/(\d{1,2}):(\d{2})\s*([AP]M)?/i);
+    if (!m) return null;
+    let h = Number(m[1]);
+    if (m[3]) { h = h % 12; if (m[3].toUpperCase() === 'PM') h += 12; }
+    const end = h * 60 + Number(m[2]), mins = Number(s.mins || s.duration || 0);
+    return { task: s.task || '', start: end - mins, end, mins };
+  }).filter(Boolean);
+}
+function schedDone(key) {
+  const blocks = schedBlocks(key), byBlock = {}, byType = {};
+  let unplanned = 0;
+  schedSessions(key).forEach(s => {
+    const mid = (s.start + s.end) / 2, named = b => b.title && b.title === s.task;
+    let b = blocks.find(b => named(b) && b.start < s.end && b.start + b.mins > s.start);
+    if (!b) b = blocks.find(b => mid >= b.start && mid < b.start + b.mins);
+    if (!b) b = blocks.find(named);
+    if (b) { byBlock[b.id] = (byBlock[b.id] || 0) + s.mins; byType[b.type] = (byType[b.type] || 0) + s.mins; }
+    else unplanned += s.mins;
+  });
+  return { byBlock, byType, unplanned };
+}
+function schedFreeSlot(key, len) {
+  const d = schedData();
+  let t = d.workStart;
+  if (key === today()) { const n = new Date(); t = Math.max(t, Math.ceil((n.getHours() * 60 + n.getMinutes()) / 15) * 15); }
+  for (const b of schedBlocks(key)) {
+    if (b.start + b.mins <= t) continue;
+    if (b.start - t >= len) break;
+    t = Math.max(t, b.start + b.mins);
+  }
+  return t + len <= d.workEnd ? t : null;
+}
+function renderSchedule() {
+  const body = document.getElementById('schedule-body'); if (!body) return;
+  if (!schedDate) schedDate = today();
+  const d = schedData();
+  const ws = document.getElementById('sched-work-start'), we = document.getElementById('sched-work-end');
+  if (!ws.options.length) {
+    let opts = '';
+    for (let m = 5 * 60; m <= 23 * 60; m += 30) opts += `<option value="${m}">${schedClock(m)}</option>`;
+    ws.innerHTML = opts; we.innerHTML = opts;
+  }
+  ws.value = d.workStart; we.value = d.workEnd;
+  let label;
+  if (schedView === 'week') { const w = schedWeekStart(schedDate); label = 'Week of ' + fmt(w) + ' – ' + fmt(schedShift(w, 6)); }
+  else label = schedParse(schedDate).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }) + (schedDate === today() ? ' · today' : '');
+  document.getElementById('sched-date-label').textContent = label;
+  document.querySelectorAll('.sched-view-btn').forEach(b => b.classList.toggle('active', b.dataset.v === schedView));
+  body.innerHTML = schedView === 'week' ? schedWeekHtml() : schedDayHtml();
+  schedNowLine();
+  clearInterval(_schedNowTimer); _schedNowTimer = setInterval(schedNowLine, 60000);
+}
+function schedTimelineHtml(key, px, compact) {
+  const d = schedData(), hours = (SCHED_TO - SCHED_FROM) / 60;
+  const y = min => (Math.min(Math.max(min, SCHED_FROM), SCHED_TO) - SCHED_FROM) / 60 * px;
+  const done = compact ? {} : schedDone(key).byBlock;
+  let h = `<div class="sched-tl${compact ? ' compact' : ''}" data-day="${key}" data-px="${px}" style="height:${hours * px}px" onclick="schedClickEmpty(event,'${key}',${px})" ondragover="event.preventDefault()" ondrop="schedDrop(event,'${key}',${px})">`;
+  h += `<div class="sched-work" style="top:${y(d.workStart)}px;height:${y(d.workEnd) - y(d.workStart)}px"></div>`;
+  for (let i = 0; i <= hours; i++) h += `<div class="sched-hr" style="top:${i * px}px">${compact ? '' : `<span>${schedClock(SCHED_FROM + i * 60)}</span>`}</div>`;
+  schedBlocks(key).forEach(b => {
+    const t = SCHED_TYPES[b.type] || SCHED_TYPES.admin;
+    const top = y(b.start), height = Math.max(px / 4, y(b.start + b.mins) - top) - 2;
+    const small = height < 40, dn = done[b.id];
+    const main = compact
+      ? `<span class="sched-blk-title">${escHtml(b.title || t.label)}</span>`
+      : `<span class="sched-blk-type">${t.label}${small ? '' : `<span class="sched-blk-time">${schedClock(b.start)} – ${schedClock(b.start + b.mins)}</span>`}</span>${small ? '<span>·</span>' : ''}<span class="sched-blk-title">${escHtml(b.title || '')}</span>`;
+    const side = compact ? '' : `<div class="sched-blk-side">${dn ? `<span class="sched-blk-done">${schedDur(dn)} done ✓</span>` : ''}${key === today() && b.type !== 'break' ? `<button class="btn btn-ghost btn-sm sched-start" onclick="event.stopPropagation();schedStart('${key}','${b.id}')">▶ Start</button>` : ''}</div>`;
+    h += `<div class="sched-blk${small ? ' small' : ''}" draggable="true" ondragstart="schedDragBlock(event,'${b.id}')" onclick="event.stopPropagation();openBlockModal('${key}','${b.id}')" title="${escHtml(t.label + ': ' + (b.title || '') + ' · ' + schedClock(b.start) + ' – ' + schedClock(b.start + b.mins))}" style="top:${top}px;height:${height}px;--c:${t.color}"><div class="sched-blk-main">${main}</div>${side}</div>`;
+  });
+  h += '<div class="sched-now" style="display:none"></div></div>';
+  return h;
+}
+function schedNowLine() {
+  const n = new Date(), mins = n.getHours() * 60 + n.getMinutes(), key = today();
+  document.querySelectorAll('.sched-tl').forEach(tl => {
+    const line = tl.querySelector('.sched-now'); if (!line) return;
+    const on = tl.dataset.day === key && mins >= SCHED_FROM && mins <= SCHED_TO;
+    line.style.display = on ? 'block' : 'none';
+    if (on) line.style.top = ((mins - SCHED_FROM) / 60 * Number(tl.dataset.px)) + 'px';
+  });
+}
+function schedDayHtml() {
+  return `<div class="sched-day"><div class="sched-tl-wrap">${schedTimelineHtml(schedDate, SCHED_PX, false)}</div>${schedPanelHtml(schedDate)}</div>`;
+}
+function schedPanelHtml(key) {
+  const d = schedData(), blocks = schedBlocks(key), ids = schedT5(key);
+  const tasks = ids.map(id => state.tasks.find(t => t.id === id)).filter(Boolean);
+  const placed = t => blocks.some(b => b.taskId === t.id);
+  const rows = tasks.map(t => {
+    const icon = t.done ? '<span style="color:var(--green)">✓</span>' : placed(t) ? '<span style="color:var(--text3)">◷</span>' : '<span style="color:var(--orange)">!</span>';
+    return `<div class="sched-t5" draggable="true" ondragstart="schedDragTask(event,'${t.id}')" title="Drag onto the timeline">${icon}<span class="sched-t5-title${t.done ? ' done' : ''}">${escHtml(t.title)}</span><span class="sched-t5-est">${t.est ? schedDur(Number(t.est)) : 'no est.'}</span>${!t.done && !placed(t) ? `<button class="btn btn-ghost btn-sm" onclick="schedPlace('${key}','${t.id}')">Place</button>` : ''}</div>`;
+  }).join('') || `<div class="sched-empty">${key === today() ? "No tasks in Today's 5. Pin tasks with TODAY on the Tasks tab, then drag them here or press Place." : key === schedShift(today(), 1) ? "No tasks picked for tomorrow yet. Pick them in Review → Evening Review → Plan tomorrow." : "Today's 5 is picked on the day itself, or the night before in Evening Review. Use + Add Block to plan this day."}</div>`;
+  const workLen = Math.max(1, d.workEnd - d.workStart);
+  const booked = blocks.reduce((s, b) => s + Math.max(0, Math.min(b.start + b.mins, d.workEnd) - Math.max(b.start, d.workStart)), 0);
+  const pct = Math.round(booked / workLen * 100);
+  const col = pct > 100 ? 'var(--red)' : pct >= 85 ? 'var(--orange)' : 'var(--green)';
+  const open = Math.max(0, workLen - booked);
+  const toPlace = tasks.filter(t => !t.done && !placed(t)).reduce((s, t) => s + (Number(t.est) || 0), 0);
+  const note = toPlace > open
+    ? `<div class="sched-note" style="color:var(--red)">Over-booked: Today's 5 still needs ${schedDur(toPlace)}, only ${schedDur(open)} open.</div>`
+    : toPlace > 0 ? `<div class="sched-note" style="color:var(--text3)">Today's 5 still needs ${schedDur(toPlace)} · ${schedDur(open)} open</div>` : '';
+  const dn = schedDone(key), planned = {};
+  blocks.forEach(b => { planned[b.type] = (planned[b.type] || 0) + b.mins; });
+  let pvd = Object.keys(SCHED_TYPES).filter(k => planned[k] || dn.byType[k]).map(k => {
+    const p = planned[k] || 0, f = dn.byType[k] || 0;
+    return `<div class="sched-row-label"><span>${SCHED_TYPES[k].label}</span><span style="color:var(--text3)">${schedDur(f)} of ${schedDur(p)}</span></div><div class="sched-meter"><div style="width:${p ? Math.min(100, Math.round(f / p * 100)) : 100}%;background:${SCHED_TYPES[k].color}"></div></div>`;
+  }).join('');
+  if (dn.unplanned) pvd += `<div class="sched-row-label"><span>Not in a block</span><span style="color:var(--text3)">${schedDur(dn.unplanned)} focused</span></div>`;
+  if (!pvd) pvd = '<div class="sched-empty">Plan blocks, then run Focus sessions to compare.</div>';
+  return `<div class="sched-panel">
+<div class="db-module"><div class="db-module-head"><span class="db-module-title">Today's 5</span><span style="font-size:11px;color:var(--text3);font-family:var(--sans)">drag onto the timeline</span></div><div class="db-module-body" style="padding:2px 14px">${rows}</div></div>
+<div class="db-module"><div class="db-module-head"><span class="db-module-title">Booked</span><span style="font-family:var(--mono);font-size:12px;color:${col}">${pct}%</span></div><div class="db-module-body" style="padding:10px 14px 12px"><div class="sched-row-label" style="margin-top:0"><span>${schedDur(booked)} of ${schedDur(workLen)} workday</span></div><div class="sched-meter"><div style="width:${Math.min(100, pct)}%;background:${col}"></div></div>${note}</div></div>
+<div class="db-module"><div class="db-module-head"><span class="db-module-title">Planned vs done</span><span style="font-size:11px;color:var(--text3);font-family:var(--sans)">from Focus sessions</span></div><div class="db-module-body" style="padding:2px 14px 12px">${pvd}</div></div>
+</div>`;
+}
+function schedWeekHtml() {
+  const w = schedWeekStart(schedDate), px = 32, hours = (SCHED_TO - SCHED_FROM) / 60;
+  const days = [0,1,2,3,4,5,6].map(i => schedShift(w, i));
+  const heads = days.map(k => {
+    const dt = schedParse(k), theme = (state.dayThemes || {})[k] || '';
+    const booked = schedBlocks(k).reduce((s, b) => s + b.mins, 0);
+    return `<div class="sched-wk-head${k === today() ? ' today' : ''}" onclick="schedGo('${k}','day')" title="Open this day"><div class="sched-wk-dow">${dt.toLocaleDateString('en-US', { weekday: 'short' })} ${dt.getMonth() + 1}/${dt.getDate()}</div><div class="sched-wk-theme" title="${escHtml(theme)}">${theme ? escHtml(theme) : '<span style="color:var(--text3)">no intention</span>'}</div><div class="sched-wk-booked">${booked ? schedDur(booked) + ' planned' : ''}</div></div>`;
+  }).join('');
+  let axis = `<div class="sched-axis" style="height:${hours * px}px">`;
+  for (let i = 0; i <= hours; i += 2) axis += `<div style="top:${i * px}px">${schedClock(SCHED_FROM + i * 60)}</div>`;
+  axis += '</div>';
+  return `<div class="sched-week-wrap"><div class="sched-week"><div></div>${heads}${axis}${days.map(k => schedTimelineHtml(k, px, true)).join('')}</div></div>`;
+}
+function schedGo(key, view) { schedDate = key || today(); if (view) schedView = view; renderSchedule(); }
+function schedStep(dir) { schedDate = schedShift(schedDate || today(), dir * (schedView === 'week' ? 7 : 1)); renderSchedule(); }
+function schedMinAt(e, px) {
+  const r = e.currentTarget.getBoundingClientRect();
+  const m = SCHED_FROM + Math.floor((e.clientY - r.top) / px * 4) * 15;
+  return Math.min(Math.max(m, SCHED_FROM), SCHED_TO - 15);
+}
+function schedClickEmpty(e, key, px) { openBlockModal(key, null, schedMinAt(e, px)); }
+function schedDragTask(e, id) { e.dataTransfer.setData('text/plain', 'task:' + id); }
+function schedDragBlock(e, id) { e.stopPropagation(); e.dataTransfer.setData('text/plain', 'block:' + id); }
+function schedDrop(e, key, px) {
+  e.preventDefault();
+  const [kind, id] = (e.dataTransfer.getData('text/plain') || '').split(':');
+  const start = schedMinAt(e, px), d = schedData();
+  if (kind === 'task') {
+    const t = state.tasks.find(x => x.id === id); if (!t) return;
+    snapshot();
+    (d.days[key] = d.days[key] || []).push({ id: uid(), start, mins: Number(t.est) || 30, type: schedTypeOf(t), title: t.title, taskId: t.id });
+  } else if (kind === 'block') {
+    const from = Object.keys(d.days).find(k => (d.days[k] || []).some(b => b.id === id)); if (!from) return;
+    snapshot();
+    const i = d.days[from].findIndex(b => b.id === id), b = d.days[from].splice(i, 1)[0];
+    if (!d.days[from].length) delete d.days[from];
+    b.start = start;
+    (d.days[key] = d.days[key] || []).push(b);
+  } else return;
+  save(); renderSchedule();
+}
+function schedPlace(key, taskId) {
+  const t = state.tasks.find(x => x.id === taskId); if (!t) return;
+  const len = Number(t.est) || 30, start = schedFreeSlot(key, len);
+  if (start === null) { flashUndoHint('No open ' + schedDur(len) + ' slot left in your workday'); return; }
+  snapshot();
+  const d = schedData();
+  (d.days[key] = d.days[key] || []).push({ id: uid(), start, mins: len, type: schedTypeOf(t), title: t.title, taskId: t.id });
+  save(); renderSchedule(); flashUndoHint('Placed at ' + schedClock(start) + ' ✓');
+}
+function schedStart(key, id) {
+  const b = (schedData().days[key] || []).find(x => x.id === id); if (!b) return;
+  const focusTab = document.querySelectorAll('.nav-tab')[3];
+  if (timerRunning) { showSection('focus', focusTab); flashUndoHint('A Focus session is already running'); return; }
+  showSection('focus', focusTab);
+  const sel = document.getElementById('focus-task-select');
+  if (b.taskId) {
+    const t = state.tasks.find(x => x.id === b.taskId);
+    if (t && ![...sel.options].some(o => o.value === t.id)) { const o = document.createElement('option'); o.value = t.id; o.textContent = t.title; sel.appendChild(o); }
+    if (t) sel.value = t.id;
+  }
+  workMins = b.mins; timerMode = 'work'; timerSeconds = b.mins * 60; sessionStartTime = null;
+  document.querySelectorAll('.focus-time-btn').forEach(x => x.classList.remove('active'));
+  updateTimerDisplay();
+  toggleTimer();
+}
+function openBlockModal(key, id, startMin) {
+  const d = schedData();
+  const b = id ? (d.days[key] || []).find(x => x.id === id) : null;
+  _schedEditing = b ? { key, id } : null;
+  document.getElementById('block-modal-title').textContent = b ? 'Edit Block' : 'Add Block';
+  document.getElementById('block-type').innerHTML = Object.keys(SCHED_TYPES).map(k => `<option value="${k}">${SCHED_TYPES[k].label}</option>`).join('');
+  const t5 = getTodays5();
+  const active = state.tasks.filter(t => !t.done && t.someday !== 'yes').sort((a, c) => (t5.includes(c.id) ? 1 : 0) - (t5.includes(a.id) ? 1 : 0));
+  document.getElementById('block-task').innerHTML = '<option value="">None</option>' + active.map(t => `<option value="${t.id}">${t5.includes(t.id) ? '★ ' : ''}${escHtml(t.title)}</option>`).join('');
+  if (startMin === null || startMin === undefined) { const free = schedFreeSlot(key, 60); startMin = free === null ? d.workStart : free; }
+  document.getElementById('block-title').value = b ? (b.title || '') : '';
+  document.getElementById('block-type').value = b ? b.type : 'deliverables';
+  document.getElementById('block-task').value = b && b.taskId && active.some(t => t.id === b.taskId) ? b.taskId : '';
+  document.getElementById('block-date').value = key;
+  document.getElementById('block-start').value = schedHHMM(b ? b.start : startMin);
+  document.getElementById('block-mins').value = b ? b.mins : 60;
+  document.getElementById('block-delete-btn').style.display = b ? '' : 'none';
+  openModal('block-modal');
+  setTimeout(() => document.getElementById('block-title').focus(), 50);
+}
+function blockTaskPicked() {
+  const t = state.tasks.find(x => x.id === document.getElementById('block-task').value); if (!t) return;
+  const title = document.getElementById('block-title');
+  if (!title.value.trim()) title.value = t.title;
+  if (Number(t.est) > 0) document.getElementById('block-mins').value = Number(t.est);
+  document.getElementById('block-type').value = schedTypeOf(t);
+}
+function saveBlock() {
+  const title = document.getElementById('block-title').value.trim();
+  const type = document.getElementById('block-type').value;
+  const taskId = document.getElementById('block-task').value;
+  const key = document.getElementById('block-date').value;
+  const startStr = document.getElementById('block-start').value;
+  const mins = Math.round(Number(document.getElementById('block-mins').value));
+  const task = taskId ? state.tasks.find(t => t.id === taskId) : null;
+  if (!key || !startStr) { flashUndoHint('Set a date and start time'); return; }
+  if (!(mins >= 5)) { flashUndoHint('Length must be at least 5 min'); return; }
+  if (!title && !task) { flashUndoHint('Give the block a title or a task'); return; }
+  const [hh, mm] = startStr.split(':').map(Number);
+  snapshot();
+  const d = schedData();
+  let b = null;
+  if (_schedEditing) {
+    const list = d.days[_schedEditing.key] || [], i = list.findIndex(x => x.id === _schedEditing.id);
+    if (i > -1) b = list.splice(i, 1)[0];
+    if (!list.length) delete d.days[_schedEditing.key];
+  }
+  if (!b) b = { id: uid() };
+  Object.assign(b, { title: title || task.title, type, taskId: taskId || '', start: hh * 60 + mm, mins });
+  (d.days[key] = d.days[key] || []).push(b);
+  save(); closeModal('block-modal');
+  if (schedView === 'day') schedDate = key;
+  renderSchedule();
+}
+function deleteBlock() {
+  if (!_schedEditing) return;
+  snapshot();
+  const d = schedData(), list = d.days[_schedEditing.key] || [];
+  const i = list.findIndex(x => x.id === _schedEditing.id);
+  if (i > -1) list.splice(i, 1);
+  if (!list.length) delete d.days[_schedEditing.key];
+  save(); closeModal('block-modal'); renderSchedule(); flashUndoHint('Block deleted · Ctrl+Z to undo');
+}
+function schedSetWork() {
+  const s = Number(document.getElementById('sched-work-start').value), e = Number(document.getElementById('sched-work-end').value);
+  if (e <= s) { flashUndoHint('Workday must end after it starts'); renderSchedule(); return; }
+  const d = schedData(); d.workStart = s; d.workEnd = e;
+  save(); renderSchedule(); tickWorkdayClock(new Date());
+}
+function schedSaveIdeal() {
+  const w = schedWeekStart(schedDate || today()), d = schedData();
+  const days = [0,1,2,3,4,5,6].map(i => schedShift(w, i));
+  if (!days.some(k => schedBlocks(k).length)) { flashUndoHint('Plan some blocks this week first'); return; }
+  if (Object.values(d.ideal).some(a => a && a.length) && !confirm("Replace your saved ideal week with this week's blocks?")) return;
+  snapshot();
+  d.ideal = {};
+  days.forEach(k => { d.ideal[schedParse(k).getDay()] = schedBlocks(k).map(b => ({ start: b.start, mins: b.mins, type: b.type, title: b.title })); });
+  save(); flashUndoHint('Ideal week saved ✓');
+}
+function schedApplyIdeal() {
+  const d = schedData();
+  if (!Object.values(d.ideal).some(a => a && a.length)) { flashUndoHint('Save an ideal week first'); return; }
+  const w = schedWeekStart(schedDate || today());
+  const empty = [0,1,2,3,4,5,6].map(i => schedShift(w, i)).filter(k => !schedBlocks(k).length && (d.ideal[schedParse(k).getDay()] || []).length);
+  if (!empty.length) { flashUndoHint('Every day this week already has blocks'); return; }
+  snapshot();
+  empty.forEach(k => { d.days[k] = d.ideal[schedParse(k).getDay()].map(b => ({ ...b, id: uid(), taskId: '' })); });
+  save(); renderSchedule(); flashUndoHint('Ideal week added to ' + empty.length + ' empty day' + (empty.length > 1 ? 's' : '') + ' ✓');
+}
+// Dashboard module: today's blocks, what's on now and next
+function dashScheduleModule() {
+  const key = today(), blocks = schedBlocks(key), done = schedDone(key).byBlock;
+  const n = new Date(), now = n.getHours() * 60 + n.getMinutes();
+  const cur = blocks.find(b => now >= b.start && now < b.start + b.mins);
+  const next = blocks.find(b => b.start > now);
+  const open = `showSection('schedule',document.querySelectorAll('.nav-tab')[7]);schedGo(today(),'day')`;
+  const rows = blocks.map(b => {
+    const t = SCHED_TYPES[b.type] || SCHED_TYPES.admin, isCur = b === cur, past = b.start + b.mins <= now;
+    const badge = isCur ? '<span class="dash-sched-badge" style="background:var(--red)">NOW</span>' : b === next ? '<span class="dash-sched-badge" style="background:var(--bg4);color:var(--text2)">NEXT</span>' : '';
+    return `<div class="dash-sched-row${isCur ? ' is-now' : ''}${past ? ' is-past' : ''}" style="--c:${t.color}"><span class="dash-sched-time">${schedClock(b.start)}</span><span class="dash-sched-dot"></span><span class="dash-sched-type">${t.label}</span><span class="dash-sched-title">${escHtml(b.title || '')}</span>${done[b.id] ? `<span class="dash-sched-done">${schedDur(done[b.id])} done</span>` : ''}${badge}${isCur && b.type !== 'break' ? `<button class="btn btn-ghost btn-sm" style="padding:2px 8px;font-size:11px" onclick="schedStart('${key}','${b.id}')">▶ Start</button>` : ''}</div>`;
+  }).join('');
+  const sub = cur ? 'now: ' + escHtml(cur.title || (SCHED_TYPES[cur.type] || SCHED_TYPES.admin).label) : next ? 'next at ' + schedClock(next.start) : blocks.length ? 'done for today' : '';
+  return `<div class="db-module" style="margin-bottom:0"><div class="db-module-head"><span class="db-module-title">TODAY'S SCHEDULE</span><span style="display:flex;gap:12px;align-items:center"><span style="font-size:12px;color:var(--text3);font-family:var(--sans)">${sub}</span><button class="db-module-link" onclick="${open}">open schedule →</button></span></div><div style="padding:${blocks.length ? '4px 0' : '14px 16px'}">${rows || `<span style="font-size:13px;color:var(--text3);font-style:italic;font-family:var(--sans)">No blocks planned for today. </span><button class="db-module-link" onclick="${open}">plan your day →</button>`}</div></div>`;
+}
 renderDashboard();
 renderBrainDump();
 renderTasks();
@@ -2912,11 +3448,11 @@ eomEl.style.color = daysLeft <= 5 ? 'var(--red)' : daysLeft <= 10 ? 'var(--orang
 }
 
 const CIRC = 138.2;
-const START_H = 9, END_H = 17;
-const totalMins = (END_H - START_H) * 60;
+const _wd = schedData();
+const totalMins = Math.max(1, _wd.workEnd - _wd.workStart);
 const nowMins = now.getHours() * 60 + now.getMinutes() + now.getSeconds() / 60;
-const startMins = START_H * 60;
-const endMins   = END_H   * 60;
+const startMins = _wd.workStart;
+const endMins   = _wd.workEnd;
 if (nowMins < startMins) {
 const minsUntil = Math.ceil(startMins - nowMins);
 const h = Math.floor(minsUntil / 60), m = minsUntil % 60;
@@ -3156,6 +3692,7 @@ var _iconCapture='<svg width="18" height="18" viewBox="0 0 18 18" fill="none"><p
 var _iconTasks='<svg width="18" height="18" viewBox="0 0 18 18" fill="none"><rect x="1" y="3" width="16" height="2.2" rx="1.1" fill="currentColor"/><rect x="1" y="7.9" width="16" height="2.2" rx="1.1" fill="currentColor"/><rect x="1" y="12.8" width="10" height="2.2" rx="1.1" fill="currentColor"/></svg>';
 var _iconFocus='<svg width="18" height="18" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="7.5" stroke="currentColor" stroke-width="1.8"/><circle cx="9" cy="9" r="3" stroke="currentColor" stroke-width="1.8"/></svg>';
 var _iconNotes='<svg width="18" height="18" viewBox="0 0 18 18" fill="none"><rect x="2" y="2" width="14" height="14" rx="2" stroke="currentColor" stroke-width="1.8"/><line x1="5" y1="6.5" x2="13" y2="6.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><line x1="5" y1="9.5" x2="13" y2="9.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><line x1="5" y1="12.5" x2="9" y2="12.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>';
+var _iconSchedule='<svg width="18" height="18" viewBox="0 0 18 18" fill="none"><rect x="2" y="3" width="14" height="13" rx="2" stroke="currentColor" stroke-width="1.8"/><line x1="2" y1="7.5" x2="16" y2="7.5" stroke="currentColor" stroke-width="1.5"/><line x1="6" y1="1.5" x2="6" y2="4.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><line x1="12" y1="1.5" x2="12" y2="4.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>';
 function _mBtn(s,icon,label,active){
   var col=active?'var(--accent)':'var(--text3)';
   var bg=active?'var(--bg4)':'none';
@@ -3168,9 +3705,10 @@ bnav.innerHTML='<div style="background:var(--bg3);border:1px solid var(--border2
   _mBtn('tasks',_iconTasks,'Tasks',false)+
   _mBtn('focus',_iconFocus,'Focus',false)+
   _mBtn('notes',_iconNotes,'Notes',false)+
+  _mBtn('schedule',_iconSchedule,'Schedule',false)+
 '</div>';
 wrapper.appendChild(bnav);
-var sectionMap={dashboard:0,braindump:1,tasks:2,focus:3,projects:4,notes:5,review:6};
+var sectionMap={dashboard:0,braindump:1,tasks:2,focus:3,projects:4,notes:5,review:6,schedule:7};
 function setActiveMobileNav(id){
 bnav.querySelectorAll('.m-nb').forEach(function(b){
 var on=b.dataset.s===id;
