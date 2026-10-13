@@ -341,6 +341,12 @@
           <optgroup label="Tags"><option value="Outreach">Outreach</option><option value="Research">Research</option><option value="Admin">Admin</option><option value="Follow-up">Follow-up</option><option value="Review">Review</option></optgroup>
         </select>
       </div>
+      <div style="flex:1"><label>Someday / Parking Lot</label>
+        <select id="tedit-someday" style="width:100%">
+          <option value="no">No — active task</option>
+          <option value="yes">Yes — park it for later</option>
+        </select>
+      </div>
     </div>
     <div style="margin-bottom:6px">
       <label style="display:flex;align-items:center;gap:6px;margin-bottom:6px">
@@ -1645,6 +1651,7 @@ document.getElementById('tedit-due').value = t.due || '';
 document.getElementById('tedit-est').value = t.est || '';
 document.getElementById('tedit-recur').value = t.recur || '';
 document.getElementById('tedit-tag').innerHTML = buildTagOptions(t.tag || '');
+document.getElementById('tedit-someday').value = t.someday === 'yes' ? 'yes' : 'no';
 document.getElementById('tedit-donewhen').value = t.doneWhen || '';
 const sel = document.getElementById('tedit-project');
 sel.innerHTML = '<option value="">No project</option>' + state.projects.map(p => `<option value="${p.id}" ${t.projectId === p.id ? 'selected' : ''}>${escHtml(p.name)}</option>`).join('');
@@ -1663,6 +1670,7 @@ t.due        = document.getElementById('tedit-due').value || '';
 t.est        = document.getElementById('tedit-est').value || '';
 t.recur      = document.getElementById('tedit-recur').value || '';
 t.tag        = document.getElementById('tedit-tag').value || '';
+t.someday    = document.getElementById('tedit-someday').value;
 t.projectId  = document.getElementById('tedit-project').value || null;
 t.doneWhen   = document.getElementById('tedit-donewhen').value.trim();
 save(); closeModal('edit-task-modal'); renderTasks(); renderProjects(); renderDashboard();
