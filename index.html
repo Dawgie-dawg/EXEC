@@ -279,10 +279,27 @@
       <div style="flex:1"><label>Start</label><input type="time" id="block-start" step="900"></div>
       <div style="flex:1"><label>Length (min)</label><input type="number" id="block-mins" min="5" step="15"></div>
     </div>
+    <div class="input-row">
+      <div style="flex:1"><label>Repeat</label><select id="block-repeat" onchange="blockRepeatChanged()"><option value="">Doesn't repeat</option><option value="daily">Every day</option><option value="weekdays">Every weekday (Mon–Fri)</option><option value="weekly">Every week on this day</option></select></div>
+      <div style="flex:1" id="block-until-wrap"><label>Until (optional)</label><input type="date" id="block-until"></div>
+    </div>
     <div class="modal-actions">
       <button class="btn btn-ghost" id="block-delete-btn" onclick="deleteBlock()" style="margin-right:auto;color:var(--red)">Delete</button>
       <button class="btn btn-ghost" onclick="closeModal('block-modal')">Cancel</button>
       <button class="btn btn-primary" onclick="saveBlock()">Save</button>
+    </div>
+  </div>
+</div>
+<!-- REPEATING BLOCK: THIS ONE OR ALL -->
+<div class="modal-overlay" id="repeat-scope-modal">
+  <div class="modal" style="width:380px;max-width:94vw">
+    <div class="modal-title" id="repeat-scope-title">Edit repeating block</div>
+    <label style="display:flex;gap:10px;align-items:center;padding:8px 0;margin:0;font-size:14px;color:var(--text);cursor:pointer;letter-spacing:0"><input type="radio" name="rscope" value="one" checked style="width:16px;height:16px;min-width:0;flex:none;margin:0;padding:0;accent-color:var(--accent)"> This block</label>
+    <label style="display:flex;gap:10px;align-items:center;padding:8px 0;margin:0;font-size:14px;color:var(--text);cursor:pointer;letter-spacing:0"><input type="radio" name="rscope" value="following" style="width:16px;height:16px;min-width:0;flex:none;margin:0;padding:0;accent-color:var(--accent)"> This and following blocks</label>
+    <label style="display:flex;gap:10px;align-items:center;padding:8px 0;margin:0;font-size:14px;color:var(--text);cursor:pointer;letter-spacing:0"><input type="radio" name="rscope" value="all" style="width:16px;height:16px;min-width:0;flex:none;margin:0;padding:0;accent-color:var(--accent)"> All blocks</label>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="schedScopePick(null)">Cancel</button>
+      <button class="btn btn-primary" id="repeat-scope-ok" onclick="schedScopePick(document.querySelector('input[name=rscope]:checked').value)">OK</button>
     </div>
   </div>
 </div>
@@ -748,6 +765,11 @@
   .sched-wk-theme{color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:2px}
   .sched-wk-booked{color:var(--text3);font-size:11px;margin-top:2px;min-height:14px}
   @media (max-width:768px){.sched-day{grid-template-columns:1fr}.sched-panel{order:-1}}
+  .sched-menu{position:fixed;z-index:4000;background:var(--bg2);border:1px solid var(--border2);border-radius:8px;padding:4px;min-width:160px;box-shadow:0 10px 30px rgba(0,0,0,0.45);display:flex;flex-direction:column}
+  .sched-menu-item{background:none;border:none;text-align:left;padding:8px 12px;border-radius:5px;font-family:var(--sans);font-size:13px;color:var(--text);cursor:pointer}
+  .sched-menu-item:hover{background:var(--bg4)}
+  .sched-menu-item.danger{color:var(--red)}
+  .sched-rep{color:var(--text3);font-weight:400;margin-left:4px}
   .dash-sched-row{display:flex;align-items:center;gap:10px;padding:8px 16px;border-bottom:1px solid var(--border);font-family:var(--sans);font-size:13px}
   .dash-sched-row:last-child{border-bottom:none}
   .dash-sched-row.is-now{background:color-mix(in srgb,var(--c) 10%,transparent)}
@@ -2715,7 +2737,7 @@ save(); renderReview();
 }
 function planTomorrowPlace() {
 const tmr = schedShift(today(), 1), d = schedData();
-const todo = planTomorrowList().map(id => state.tasks.find(t => t.id === id)).filter(t => t && !(d.days[tmr] || []).some(b => b.taskId === t.id));
+const todo = planTomorrowList().map(id => state.tasks.find(t => t.id === id)).filter(t => t && !schedBlocks(tmr).some(b => b.taskId === t.id));
 if (!todo.length) { flashUndoHint(planTomorrowList().length ? 'Already in tomorrow\'s schedule' : "Pick tomorrow's 5 first"); return; }
 snapshot();
 let placed = 0;
@@ -3358,13 +3380,50 @@ function schedData() {
   if (!d.ideal) d.ideal = {};
   if (typeof d.workStart !== 'number') d.workStart = 9 * 60;
   if (typeof d.workEnd !== 'number') d.workEnd = 17 * 60;
+  if (!Array.isArray(d.repeats)) d.repeats = [];
   return d;
 }
 function schedKey(dt) { return dt.getFullYear() + '-' + String(dt.getMonth()+1).padStart(2,'0') + '-' + String(dt.getDate()).padStart(2,'0'); }
 function schedParse(key) { const [y,m,d] = key.split('-').map(Number); return new Date(y, m-1, d); }
 function schedShift(key, days) { const d = schedParse(key); d.setDate(d.getDate() + days); return schedKey(d); }
 function schedWeekStart(key) { const d = schedParse(key); d.setDate(d.getDate() - (d.getDay() + 6) % 7); return schedKey(d); }
-function schedBlocks(key) { return (schedData().days[key] || []).slice().sort((a,b) => a.start - b.start); }
+// Repeating blocks live in schedData().repeats as rules
+// { id, start, mins, type, title, taskId, rule: daily|weekdays|weekly, from, until, skip: {date: true} };
+// each day shows them as blocks with id "<rule id>@<date>".
+function schedRepeatOn(r, key) {
+  if (key < r.from || (r.until && key > r.until) || (r.skip && r.skip[key])) return false;
+  const dow = schedParse(key).getDay();
+  return r.rule === 'daily' || (r.rule === 'weekdays' && dow >= 1 && dow <= 5) || (r.rule === 'weekly' && dow === schedParse(r.from).getDay());
+}
+function schedBlocks(key) {
+  const d = schedData();
+  const reps = d.repeats.filter(r => schedRepeatOn(r, key)).map(r => ({ id: r.id + '@' + key, repeatId: r.id, start: r.start, mins: r.mins, type: r.type, title: r.title, taskId: r.taskId || '' }));
+  return (d.days[key] || []).concat(reps).sort((a,b) => a.start - b.start);
+}
+function schedFind(key, id) {
+  const d = schedData();
+  if (String(id).includes('@')) {
+    const r = d.repeats.find(x => x.id === String(id).split('@')[0]);
+    const b = r && schedBlocks(key).find(x => x.id === id);
+    return b ? { b, r } : null;
+  }
+  const b = (d.days[key] || []).find(x => x.id === id);
+  return b ? { b, r: null } : null;
+}
+// Overlapping blocks share the width side by side: { blockId: [column, columns] }
+function schedLayout(blocks) {
+  const out = {};
+  let cluster = [], end = -1;
+  const flush = () => {
+    const cols = [];
+    cluster.forEach(b => { let c = cols.findIndex(e => e <= b.start); if (c < 0) { c = cols.length; cols.push(0); } cols[c] = b.start + b.mins; out[b.id] = [c, 0]; });
+    cluster.forEach(b => { out[b.id][1] = cols.length; });
+    cluster = []; end = -1;
+  };
+  blocks.forEach(b => { if (cluster.length && b.start >= end) flush(); cluster.push(b); end = Math.max(end, b.start + b.mins); });
+  if (cluster.length) flush();
+  return out;
+}
 function schedClock(min) { const h = Math.floor(min / 60) % 24, m = min % 60; return (h % 12 || 12) + (m ? ':' + String(m).padStart(2,'0') : '') + (h >= 12 ? 'pm' : 'am'); }
 function schedDur(min) { min = Math.round(min); const h = Math.floor(min / 60), m = min % 60; return h ? h + 'h' + (m ? ' ' + m + 'm' : '') : m + 'm'; }
 function schedHHMM(min) { return String(Math.floor(min / 60)).padStart(2,'0') + ':' + String(min % 60).padStart(2,'0'); }
@@ -3442,15 +3501,19 @@ function schedTimelineHtml(key, px, compact) {
   let h = `<div class="sched-tl${compact ? ' compact' : ''}" data-day="${key}" data-px="${px}" style="height:${hours * px}px" onclick="schedClickEmpty(event,'${key}',${px})" ondragover="event.preventDefault()" ondrop="schedDrop(event,'${key}',${px})">`;
   h += `<div class="sched-work" style="top:${y(d.workStart)}px;height:${y(d.workEnd) - y(d.workStart)}px"></div>`;
   for (let i = 0; i <= hours; i++) h += `<div class="sched-hr" style="top:${i * px}px">${compact ? '' : `<span>${schedClock(SCHED_FROM + i * 60)}</span>`}</div>`;
-  schedBlocks(key).forEach(b => {
+  const blocks = schedBlocks(key), lay = schedLayout(blocks);
+  const L = compact ? 1 : 50, R = compact ? 1 : 4;
+  blocks.forEach(b => {
     const t = SCHED_TYPES[b.type] || SCHED_TYPES.admin;
     const top = y(b.start), height = Math.max(px / 4, y(b.start + b.mins) - top) - 2;
-    const small = height < 40, dn = done[b.id];
+    const small = height < 40, dn = done[b.id], [col, cols] = lay[b.id] || [0, 1];
+    const rep = b.repeatId ? '<span class="sched-rep" title="Repeats">↻</span>' : '';
     const main = compact
-      ? `<span class="sched-blk-title">${escHtml(b.title || t.label)}</span>`
-      : `<span class="sched-blk-type">${t.label}${small ? '' : `<span class="sched-blk-time">${schedClock(b.start)} – ${schedClock(b.start + b.mins)}</span>`}</span>${small ? '<span>·</span>' : ''}<span class="sched-blk-title">${escHtml(b.title || '')}</span>`;
+      ? `<span class="sched-blk-title">${b.repeatId ? '↻ ' : ''}${escHtml(b.title || t.label)}</span>`
+      : `<span class="sched-blk-type">${t.label}${rep}${small ? '' : `<span class="sched-blk-time">${schedClock(b.start)} – ${schedClock(b.start + b.mins)}</span>`}</span>${small ? '<span>·</span>' : ''}<span class="sched-blk-title">${escHtml(b.title || '')}</span>`;
     const side = compact ? '' : `<div class="sched-blk-side">${dn ? `<span class="sched-blk-done">${schedDur(dn)} done ✓</span>` : ''}${key === today() && b.type !== 'break' ? `<button class="btn btn-ghost btn-sm sched-start" onclick="event.stopPropagation();schedStart('${key}','${b.id}')">▶ Start</button>` : ''}</div>`;
-    h += `<div class="sched-blk${small ? ' small' : ''}" draggable="true" ondragstart="schedDragBlock(event,'${b.id}')" onclick="event.stopPropagation();openBlockModal('${key}','${b.id}')" title="${escHtml(t.label + ': ' + (b.title || '') + ' · ' + schedClock(b.start) + ' – ' + schedClock(b.start + b.mins))}" style="top:${top}px;height:${height}px;--c:${t.color}"><div class="sched-blk-main">${main}</div>${side}</div>`;
+    const pos = `left:calc(${L}px + (100% - ${L + R}px) * ${col} / ${cols});width:calc((100% - ${L + R}px) / ${cols} - ${cols > 1 ? 2 : 0}px);right:auto`;
+    h += `<div class="sched-blk${small ? ' small' : ''}" draggable="true" ondragstart="schedDragBlock(event,'${b.id}')" onclick="event.stopPropagation();if(!_schedLPFired)openBlockModal('${key}','${b.id}')" oncontextmenu="schedMenu(event,'${key}','${b.id}')" ontouchstart="schedTouch(event,'${key}','${b.id}')" title="${escHtml(t.label + ': ' + (b.title || '') + ' · ' + schedClock(b.start) + ' – ' + schedClock(b.start + b.mins) + (b.repeatId ? ' · repeats' : '') + ' · right-click for more')}" style="top:${top}px;height:${height}px;${pos};--c:${t.color}"><div class="sched-blk-main">${main}</div>${side}</div>`;
   });
   h += '<div class="sched-now" style="display:none"></div></div>';
   return h;
@@ -3521,7 +3584,7 @@ function schedMinAt(e, px) {
 function schedClickEmpty(e, key, px) { openBlockModal(key, null, schedMinAt(e, px)); }
 function schedDragTask(e, id) { e.dataTransfer.setData('text/plain', 'task:' + id); }
 function schedDragBlock(e, id) { e.stopPropagation(); e.dataTransfer.setData('text/plain', 'block:' + id); }
-function schedDrop(e, key, px) {
+async function schedDrop(e, key, px) {
   e.preventDefault();
   const [kind, id] = (e.dataTransfer.getData('text/plain') || '').split(':');
   const start = schedMinAt(e, px), d = schedData();
@@ -3529,6 +3592,14 @@ function schedDrop(e, key, px) {
     const t = state.tasks.find(x => x.id === id); if (!t) return;
     snapshot();
     (d.days[key] = d.days[key] || []).push({ id: uid(), start, mins: Number(t.est) || 30, type: schedTypeOf(t), title: t.title, taskId: t.id });
+  } else if (kind === 'block' && id.includes('@')) {
+    // a repeating block: move this one (it becomes a one-off) or all of them (new time)
+    const [rid, from] = id.split('@'), r = d.repeats.find(x => x.id === rid); if (!r) return;
+    const scope = await schedAskScope('move'); if (!scope) return;
+    snapshot();
+    if (scope === 'all') r.start = start;
+    else if (scope === 'following') schedSplit(r, from, { start });
+    else { r.skip = r.skip || {}; r.skip[from] = true; (d.days[key] = d.days[key] || []).push({ id: uid(), start, mins: r.mins, type: r.type, title: r.title, taskId: r.taskId || '' }); }
   } else if (kind === 'block') {
     const from = Object.keys(d.days).find(k => (d.days[k] || []).some(b => b.id === id)); if (!from) return;
     snapshot();
@@ -3549,7 +3620,8 @@ function schedPlace(key, taskId) {
   save(); renderSchedule(); flashUndoHint('Placed at ' + schedClock(start) + ' ✓');
 }
 function schedStart(key, id) {
-  const b = (schedData().days[key] || []).find(x => x.id === id); if (!b) return;
+  const f = schedFind(key, id); if (!f) return;
+  const b = f.b;
   const focusTab = document.querySelectorAll('.nav-tab')[3];
   if (timerRunning) { showSection('focus', focusTab); flashUndoHint('A Focus session is already running'); return; }
   if (focusWorkedMs() > 0) resetTimer();   // a paused session is saved first
@@ -3560,10 +3632,14 @@ function schedStart(key, id) {
   updateTimerDisplay();
   toggleTimer();
 }
-function openBlockModal(key, id, startMin) {
+function openBlockModal(key, id, startMin, focusRepeat) {
   const d = schedData();
-  const b = id ? (d.days[key] || []).find(x => x.id === id) : null;
+  const f = id ? schedFind(key, id) : null, b = f ? f.b : null;
   _schedEditing = b ? { key, id } : null;
+  document.getElementById('block-repeat').value = f && f.r ? f.r.rule : '';
+  document.getElementById('block-until').value = f && f.r ? (f.r.until || '') : '';
+  blockRepeatChanged();
+  if (focusRepeat) setTimeout(() => document.getElementById('block-repeat').focus(), 80);
   document.getElementById('block-modal-title').textContent = b ? 'Edit Block' : 'Add Block';
   document.getElementById('block-type').innerHTML = Object.keys(SCHED_TYPES).map(k => `<option value="${k}">${SCHED_TYPES[k].label}</option>`).join('');
   const t5 = getTodays5();
@@ -3578,7 +3654,10 @@ function openBlockModal(key, id, startMin) {
   document.getElementById('block-mins').value = b ? b.mins : 60;
   document.getElementById('block-delete-btn').style.display = b ? '' : 'none';
   openModal('block-modal');
-  setTimeout(() => document.getElementById('block-title').focus(), 50);
+  if (!focusRepeat) setTimeout(() => document.getElementById('block-title').focus(), 50);
+}
+function blockRepeatChanged() {
+  document.getElementById('block-until-wrap').style.visibility = document.getElementById('block-repeat').value ? 'visible' : 'hidden';
 }
 function blockTaskPicked() {
   const t = state.tasks.find(x => x.id === document.getElementById('block-task').value); if (!t) return;
@@ -3587,7 +3666,7 @@ function blockTaskPicked() {
   if (Number(t.est) > 0) document.getElementById('block-mins').value = Number(t.est);
   document.getElementById('block-type').value = schedTypeOf(t);
 }
-function saveBlock() {
+async function saveBlock() {
   const title = document.getElementById('block-title').value.trim();
   const type = document.getElementById('block-type').value;
   const taskId = document.getElementById('block-task').value;
@@ -3598,31 +3677,128 @@ function saveBlock() {
   if (!key || !startStr) { flashUndoHint('Set a date and start time'); return; }
   if (!(mins >= 5)) { flashUndoHint('Length must be at least 5 min'); return; }
   if (!title && !task) { flashUndoHint('Give the block a title or a task'); return; }
+  const rule = document.getElementById('block-repeat').value, until = rule ? document.getElementById('block-until').value : '';
+  if (until && until < key) { flashUndoHint('Until must be on or after the date'); return; }
   const [hh, mm] = startStr.split(':').map(Number);
-  snapshot();
-  const d = schedData();
-  let b = null;
-  if (_schedEditing) {
-    const list = d.days[_schedEditing.key] || [], i = list.findIndex(x => x.id === _schedEditing.id);
-    if (i > -1) b = list.splice(i, 1)[0];
-    if (!list.length) delete d.days[_schedEditing.key];
+  const fields = { title: title || task.title, type, taskId: taskId || '', start: hh * 60 + mm, mins };
+  const d = schedData(), ed = _schedEditing, f = ed ? schedFind(ed.key, ed.id) : null;
+  if (f && f.r) {
+    // editing one day of a repeating block
+    const scope = await schedAskScope('edit'); if (!scope) return;
+    snapshot();
+    if (scope === 'one') {
+      f.r.skip = f.r.skip || {}; f.r.skip[ed.key] = true;
+      (d.days[key] = d.days[key] || []).push({ id: uid(), ...fields });
+    } else if (!rule) {
+      // stop repeating (all, or from this day on): this day stays as a one-off
+      if (scope === 'all') d.repeats = d.repeats.filter(x => x !== f.r);
+      else schedEndBefore(f.r, ed.key);
+      (d.days[ed.key] = d.days[ed.key] || []).push({ id: uid(), ...fields });
+    } else if (scope === 'following') schedSplit(f.r, ed.key, { ...fields, rule, until });
+    else Object.assign(f.r, fields, { rule, until });
+  } else {
+    snapshot();
+    if (f) {
+      const list = d.days[ed.key] || [], i = list.findIndex(x => x.id === ed.id);
+      if (i > -1) list.splice(i, 1);
+      if (!list.length) delete d.days[ed.key];
+    }
+    if (rule) d.repeats.push({ id: uid(), ...fields, rule, from: key, until, skip: {} });
+    else (d.days[key] = d.days[key] || []).push({ id: f ? f.b.id : uid(), ...fields });
   }
-  if (!b) b = { id: uid() };
-  Object.assign(b, { title: title || task.title, type, taskId: taskId || '', start: hh * 60 + mm, mins });
-  (d.days[key] = d.days[key] || []).push(b);
   save(); closeModal('block-modal');
   if (schedView === 'day') schedDate = key;
   renderSchedule();
 }
-function deleteBlock() {
-  if (!_schedEditing) return;
-  snapshot();
-  const d = schedData(), list = d.days[_schedEditing.key] || [];
-  const i = list.findIndex(x => x.id === _schedEditing.id);
-  if (i > -1) list.splice(i, 1);
-  if (!list.length) delete d.days[_schedEditing.key];
-  save(); closeModal('block-modal'); renderSchedule(); flashUndoHint('Block deleted · Ctrl+Z to undo');
+function deleteBlock() { if (_schedEditing) schedDeleteBlock(_schedEditing.key, _schedEditing.id); }
+async function schedDeleteBlock(key, id) {
+  const f = schedFind(key, id); if (!f) return;
+  const d = schedData();
+  if (f.r) {
+    const scope = await schedAskScope('delete'); if (!scope) return;
+    snapshot();
+    if (scope === 'one') { f.r.skip = f.r.skip || {}; f.r.skip[key] = true; }
+    else if (scope === 'following') schedEndBefore(f.r, key);
+    else d.repeats = d.repeats.filter(x => x !== f.r);
+  } else {
+    snapshot();
+    d.days[key] = (d.days[key] || []).filter(x => x.id !== id);
+    if (!d.days[key].length) delete d.days[key];
+  }
+  save(); closeModal('block-modal'); renderSchedule(); flashUndoHint('Deleted · Ctrl+Z to undo');
 }
+function schedDuplicate(key, id) {
+  const f = schedFind(key, id); if (!f) return;
+  const b = f.b, d = schedData();
+  let start = b.start + b.mins;
+  if (start + b.mins > SCHED_TO) start = b.start;
+  snapshot();
+  (d.days[key] = d.days[key] || []).push({ id: uid(), start, mins: b.mins, type: b.type, title: b.title, taskId: b.taskId || '' });
+  save(); renderSchedule(); flashUndoHint('Duplicated at ' + schedClock(start) + ' ✓');
+}
+// "This and following": the rule ends the day before `key`, and a copy with
+// `changes` runs from `key` (from the first day it is simply the whole rule)
+function schedSplit(r, key, changes) {
+  if (key <= r.from) { Object.assign(r, changes); return r; }
+  const skip = {};
+  Object.keys(r.skip || {}).forEach(k => { if (k >= key) { skip[k] = true; delete r.skip[k]; } });
+  const nr = Object.assign({}, r, changes, { id: uid(), from: key, skip });
+  if (!('until' in changes)) nr.until = r.until;
+  r.until = schedShift(key, -1);
+  schedData().repeats.push(nr);
+  return nr;
+}
+function schedEndBefore(r, key) {   // delete this and following
+  const d = schedData();
+  if (key <= r.from) { d.repeats = d.repeats.filter(x => x !== r); return; }
+  r.until = schedShift(key, -1);
+  Object.keys(r.skip || {}).forEach(k => { if (k >= key) delete r.skip[k]; });
+}
+// Google-style "This block / This and following / All blocks" — resolves 'one', 'following', 'all' or null
+let _schedScopeResolve = null;
+function schedAskScope(verb) {
+  document.getElementById('repeat-scope-title').textContent = (verb === 'delete' ? 'Delete' : verb === 'move' ? 'Move' : 'Edit') + ' repeating block';
+  document.querySelector('input[name=rscope][value=one]').checked = true;
+  if (_schedScopeResolve) _schedScopeResolve(null);
+  openModal('repeat-scope-modal');
+  return new Promise(res => { _schedScopeResolve = res; });
+}
+function schedScopePick(v) {
+  closeModal('repeat-scope-modal');
+  const r = _schedScopeResolve; _schedScopeResolve = null;
+  if (r) r(v);
+}
+// Right-click (long-press on a phone) menu on a block
+let _schedMenuEl = null, _schedLP = null, _schedLPFired = false;
+function schedMenu(e, key, id) {
+  e.preventDefault(); e.stopPropagation();
+  schedMenuClose();
+  if (!schedFind(key, id)) return;
+  const m = document.createElement('div');
+  m.className = 'sched-menu';
+  m.innerHTML = [['✎  Edit', `openBlockModal('${key}','${id}')`], ['⧉  Duplicate', `schedDuplicate('${key}','${id}')`], ['↻  Repeat…', `openBlockModal('${key}','${id}',null,true)`], ['✕  Delete', `schedDeleteBlock('${key}','${id}')`, 1]]
+    .map(([label, fn, danger]) => `<button class="sched-menu-item${danger ? ' danger' : ''}" onclick="schedMenuClose();${fn}">${label}</button>`).join('');
+  document.body.appendChild(m);
+  m.style.left = Math.max(8, Math.min(e.clientX, innerWidth - m.offsetWidth - 8)) + 'px';
+  m.style.top = Math.max(8, Math.min(e.clientY, innerHeight - m.offsetHeight - 8)) + 'px';
+  _schedMenuEl = m;
+}
+function schedMenuClose() { if (_schedMenuEl) { _schedMenuEl.remove(); _schedMenuEl = null; } }
+function schedTouch(e, key, id) {
+  _schedLPFired = false;
+  const t = e.touches[0], x = t.clientX, y = t.clientY, el = e.currentTarget;
+  clearTimeout(_schedLP);
+  _schedLP = setTimeout(() => { _schedLPFired = true; schedMenu({ preventDefault() {}, stopPropagation() {}, clientX: x, clientY: y }, key, id); }, 500);
+  const done = ev => {
+    clearTimeout(_schedLP);
+    if (_schedLPFired && ev.type === 'touchend') ev.preventDefault();   // no tap after a long-press
+    el.removeEventListener('touchmove', done); el.removeEventListener('touchend', done);
+  };
+  el.addEventListener('touchmove', done); el.addEventListener('touchend', done);
+}
+document.addEventListener('click', e => { if (_schedMenuEl && !_schedMenuEl.contains(e.target)) schedMenuClose(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') schedMenuClose(); });
+document.addEventListener('scroll', schedMenuClose, true);
 function schedSetWork() {
   const s = Number(document.getElementById('sched-work-start').value), e = Number(document.getElementById('sched-work-end').value);
   if (e <= s) { flashUndoHint('Workday must end after it starts'); renderSchedule(); return; }
