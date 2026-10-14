@@ -4105,13 +4105,20 @@ if (pctEl) { pctEl.textContent = Math.round(pct * 100) + '%'; pctEl.style.color 
 }
 tickClock();
 setInterval(tickClock, 1000);
-var _favKey = '';   // var: the timer can redraw the icon before this line runs
+var _favKey = '', _badgeMins = null;   // var: the timer can redraw the icon before this line runs
+// Installed app: the minutes left as a number badge on the taskbar icon (cleared when the timer stops)
+function updateAppBadge(mins) {
+if (!('setAppBadge' in navigator) || mins === _badgeMins) return;
+_badgeMins = mins;
+try { (mins ? navigator.setAppBadge(mins) : navigator.clearAppBadge()).catch(() => {}); } catch(e) {}
+}
 function updateFavicon() {
 const cs = getComputedStyle(document.body);
 const isLight = document.body.classList.contains('light');
 // While a Focus session runs (or is paused part-way), the icon becomes the timer:
 // a ring that empties plus the minutes left (seconds in the last minute)
 const total = getTotal(), secs = Math.max(0, Math.min(timerSeconds, total));
+updateAppBadge(timerRunning || (secs > 0 && secs < total) ? Math.max(1, Math.ceil(secs / 60)) : 0);
 if (timerRunning || (secs > 0 && secs < total)) {
   const isBreak = timerMode === 'break';
   const col = !timerRunning ? '#8a8a8a' : isBreak ? (isLight ? '#2ecc71' : cs.getPropertyValue('--green').trim()) : (isLight ? '#7c6aff' : cs.getPropertyValue('--accent').trim());
