@@ -3527,7 +3527,10 @@ function gcalLoadLib() {
   s.onload = () => { const sch = document.getElementById('section-schedule'); if (sch && sch.classList.contains('active')) gcalCtlRender(); };
   document.head.appendChild(s);
 }
-function gcalConnect() {
+// The Google account last used (kept on this device) — Reconnect goes straight to it;
+// "Switch account" shows Google's chooser
+function gcalSavedAccount() { try { return localStorage.getItem('exec_gcal_account') || ''; } catch(e) { return ''; } }
+function gcalConnect(switchAccount) {
   if (!(window.google && google.accounts && google.accounts.oauth2)) { gcalLoadLib(); flashUndoHint('Loading Google sign-in · press again in a moment'); return; }
   // Google always shows its account chooser; the account you pick is the calendar shown
   if (!_gcal.client) _gcal.client = google.accounts.oauth2.initTokenClient({
@@ -3542,12 +3545,13 @@ function gcalConnect() {
     },
     error_callback: err => { _gcal.error = err && err.type === 'popup_closed' ? '' : 'Google sign-in window was blocked or closed.'; gcalCtlRender(); }
   });
-  _gcal.client.requestAccessToken();
+  const saved = switchAccount ? '' : gcalSavedAccount();
+  _gcal.client.requestAccessToken(saved ? { login_hint: saved, prompt: '' } : { prompt: 'select_account' });
 }
 function gcalDisconnect() {
   if (_gcal.token && window.google && google.accounts) google.accounts.oauth2.revoke(_gcal.token, () => {});
   _gcal.token = null; _gcal.expiresAt = 0; _gcal.weeks = {};
-  try { localStorage.removeItem('exec_gcal'); } catch(e) {}
+  try { localStorage.removeItem('exec_gcal'); localStorage.removeItem('exec_gcal_account'); } catch(e) {}
   renderSchedule(); flashUndoHint('Google Calendar disconnected');
 }
 function gcalToggle() { _gcal.hidden = !_gcal.hidden; renderSchedule(); }
@@ -3557,8 +3561,8 @@ function gcalCtlRender() {
   const was = (() => { try { return localStorage.getItem('exec_gcal') === '1'; } catch(e) { return false; } })();
   const live = _gcal.token && Date.now() < _gcal.expiresAt;
   const err = _gcal.error ? `<span class="gcal-status" style="color:var(--red)">${escHtml(_gcal.error)}</span>` : '';
-  if (live) el.innerHTML = `${err}<span class="gcal-status" title="The calendar EXEC is reading, as Google names it">Google Calendar${_gcal.calName ? ': <b style="color:var(--text2)">' + escHtml(_gcal.calName) + '</b>' : ''}${_gcal.updated ? ' · updated ' + new Date(_gcal.updated).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }).toLowerCase() : ''}</span><button class="btn btn-ghost btn-sm" onclick="gcalToggle()">${_gcal.hidden ? 'Show' : 'Hide'}</button><button class="gcal-link" onclick="gcalConnect()">Switch account</button><button class="gcal-link" onclick="gcalDisconnect()">Disconnect</button>`;
-  else el.innerHTML = `${err}<button class="btn btn-${was ? 'primary' : 'ghost'} btn-sm" onclick="gcalConnect()">${was ? '↻ Reconnect Google Calendar' : '📅 Show Google Calendar'}</button>`;
+  if (live) el.innerHTML = `${err}<span class="gcal-status" title="The calendar EXEC is reading, as Google names it">Google Calendar${_gcal.calName ? ': <b style="color:var(--text2)">' + escHtml(_gcal.calName) + '</b>' : ''}${_gcal.updated ? ' · updated ' + new Date(_gcal.updated).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }).toLowerCase() : ''}</span><button class="btn btn-ghost btn-sm" onclick="gcalToggle()">${_gcal.hidden ? 'Show' : 'Hide'}</button><button class="gcal-link" onclick="gcalConnect(true)">Switch account</button><button class="gcal-link" onclick="gcalDisconnect()">Disconnect</button>`;
+  else el.innerHTML = `${err}<button class="btn btn-${was ? 'primary' : 'ghost'} btn-sm" onclick="gcalConnect()">${was ? '↻ Reconnect ' + (gcalSavedAccount() ? escHtml(gcalSavedAccount()) : 'Google Calendar') : '📅 Show Google Calendar'}</button>${was && gcalSavedAccount() ? `<button class="gcal-link" onclick="gcalConnect(true)">Other account</button>` : ''}`;
 }
 // The calendar read is the main calendar of the Google account you pick in
 // Google's sign-in ("primary" = the signed-in Google account's own calendar)
@@ -3573,7 +3577,9 @@ async function gcalEnsure(weekKey, force) {
     const r = await fetch('https://www.googleapis.com/calendar/v3/calendars/primary/events?' + q, { headers: { Authorization: 'Bearer ' + _gcal.token } });
     if (r.status === 401) { _gcal.token = null; _gcal.expiresAt = 0; _gcal.error = ''; }
     else if (!r.ok) { _gcal.error = 'Google Calendar could not be read (' + r.status + ').'; _gcal.weeks[weekKey] = { at: Date.now(), items: w ? w.items : [] }; }
-    else { const j = await r.json(); _gcal.weeks[weekKey] = { at: Date.now(), items: j.items || [] }; _gcal.updated = Date.now(); _gcal.error = ''; _gcal.calName = j.summary || ''; }
+    else { const j = await r.json(); _gcal.weeks[weekKey] = { at: Date.now(), items: j.items || [] }; _gcal.updated = Date.now(); _gcal.error = ''; _gcal.calName = j.summary || '';
+      // a main calendar is named after its account's email — remember it for next time
+      if (/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(_gcal.calName)) { try { localStorage.setItem('exec_gcal_account', _gcal.calName); } catch(e) {} } }
   } catch(e) { _gcal.error = 'Google Calendar could not be reached.'; _gcal.weeks[weekKey] = { at: Date.now(), items: w ? w.items : [] }; }
   _gcal.loading[weekKey] = false;
   const sch = document.getElementById('section-schedule');
