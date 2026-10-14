@@ -1,7 +1,7 @@
-const CACHE = 'exec-v2';
+const CACHE = 'exec-v3';
 const STATIC = [
   'https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&family=Roboto:wght@300;400;500&display=swap',
-  'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2'
+  'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.min.js'
 ];
 
 // Install — only cache static external assets, never index.html
