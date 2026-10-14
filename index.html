@@ -735,6 +735,9 @@
   .sched-blk:hover{background:color-mix(in srgb,var(--c) 26%,var(--bg2))}
   .sched-blk-main{display:flex;flex-direction:column;min-width:0}
   .sched-blk-main>span{flex-shrink:0}
+  .sched-blk-main{flex:1;overflow:hidden}
+  .sched-blk.small .sched-blk-main>.sched-blk-title{flex:1 1 auto;min-width:24px}
+  .sched-blk.small .sched-blk-main>.sched-blk-type{flex:0 1 auto;min-width:0;max-width:45%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .sched-blk.small .sched-blk-main{flex-direction:row;align-items:center;white-space:nowrap;gap:4px}
   .sched-blk-type{font-weight:600;color:var(--c)}
   .sched-blk-title{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -774,6 +777,12 @@
   .sched-menu-item:hover{background:var(--bg4)}
   .sched-menu-item.danger{color:var(--red)}
   .sched-rep{color:var(--text3);font-weight:400;margin-left:4px}
+  .gcal-ev{position:absolute;right:2px;border:1px dashed var(--border2);border-radius:4px;background:repeating-linear-gradient(135deg,rgba(160,160,160,0.13) 0 6px,rgba(160,160,160,0.05) 6px 12px);pointer-events:none;z-index:0;font-family:var(--sans);font-size:11px;line-height:13px;color:var(--text2);padding:2px 5px;overflow:hidden;box-sizing:border-box}
+  .gcal-ev.free{border-style:dotted;opacity:0.6}
+  .gcal-ev b{font-weight:600;color:var(--text)}
+  .gcal-allday{position:absolute;top:2px;right:2px;z-index:2;font-family:var(--sans);font-size:11px;color:var(--text2);background:var(--bg3);border:1px dashed var(--border2);border-radius:4px;padding:1px 6px;max-width:28%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none}
+  .gcal-status{font-size:12px;color:var(--text3)}
+  .gcal-link{background:none;border:none;color:var(--text3);font-size:12px;cursor:pointer;text-decoration:underline;font-family:var(--sans);padding:0}
   .sched-blk.has-tasks{padding-top:3px;padding-bottom:3px}
   .sched-blk-head{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:15px}
   .sched-blk-head-title{color:var(--text);font-weight:500;margin-left:6px}
@@ -822,7 +831,7 @@
       <button class="btn btn-ghost btn-sm" onclick="schedSaveIdeal()" title="Save this week's blocks as your ideal week">Save as ideal week</button>
     </div>
   </div>
-  <div class="sched-workday">Workday <select id="sched-work-start" onchange="schedSetWork()"></select> to <select id="sched-work-end" onchange="schedSetWork()"></select></div>
+  <div class="sched-workday">Workday <select id="sched-work-start" onchange="schedSetWork()"></select> to <select id="sched-work-end" onchange="schedSetWork()"></select><span id="gcal-ctl" style="margin-left:auto;display:flex;align-items:center;gap:8px;flex-wrap:wrap"></span></div>
   <div id="schedule-body"></div>
 </div>
 <script>
@@ -3452,12 +3461,12 @@ function schedFind(key, id) {
 // Overlapping blocks share the width side by side: { blockId: [column, columns] }
 function schedLayout(blocks) {
   const out = {};
-  let cluster = [], end = -1;
+  let cluster = [], end = -1, group = 0;
   const flush = () => {
     const cols = [];
-    cluster.forEach(b => { let c = cols.findIndex(e => e <= b.start); if (c < 0) { c = cols.length; cols.push(0); } cols[c] = b.start + b.mins; out[b.id] = [c, 0]; });
+    cluster.forEach(b => { let c = cols.findIndex(e => e <= b.start); if (c < 0) { c = cols.length; cols.push(0); } cols[c] = b.start + b.mins; out[b.id] = [c, 0, group]; });
     cluster.forEach(b => { out[b.id][1] = cols.length; });
-    cluster = []; end = -1;
+    cluster = []; end = -1; group++;
   };
   blocks.forEach(b => { if (cluster.length && b.start >= end) flush(); cluster.push(b); end = Math.max(end, b.start + b.mins); });
   if (cluster.length) flush();
@@ -3502,11 +3511,100 @@ function schedDone(key) {
   });
   return { byBlock, byType, unplanned };
 }
+// ── Google Calendar overlay (read-only) ──
+// Sign-in through Google's own popup; read-only access to your primary
+// calendar's events. The access lasts about an hour and is kept in memory
+// only — nothing from your calendar is saved to Supabase or this device.
+// Renewing needs a button press (Google's rule), hence "Reconnect".
+const GCAL_CLIENT_ID = '86381440307-7bffdmocps7p129l0r504bd4cni4o95a.apps.googleusercontent.com';   // OAuth client ID from Google Cloud (public by design)
+const GCAL_SCOPE = 'https://www.googleapis.com/auth/calendar.events.readonly';
+const _gcal = { token: null, expiresAt: 0, client: null, weeks: {}, loading: {}, hidden: false, error: '', updated: 0 };
+function gcalOn() { return !!(_gcal.token && Date.now() < _gcal.expiresAt && !_gcal.hidden); }
+function gcalLoadLib() {
+  if (!GCAL_CLIENT_ID || window.google && google.accounts || document.getElementById('gsi-lib')) return;
+  const s = document.createElement('script');
+  s.src = 'https://accounts.google.com/gsi/client'; s.async = true; s.id = 'gsi-lib';
+  s.onload = () => { const sch = document.getElementById('section-schedule'); if (sch && sch.classList.contains('active')) gcalCtlRender(); };
+  document.head.appendChild(s);
+}
+function gcalConnect() {
+  if (!(window.google && google.accounts && google.accounts.oauth2)) { gcalLoadLib(); flashUndoHint('Loading Google sign-in · press again in a moment'); return; }
+  // Google always shows its account chooser; the account you pick is the calendar shown
+  if (!_gcal.client) _gcal.client = google.accounts.oauth2.initTokenClient({
+    client_id: GCAL_CLIENT_ID, scope: GCAL_SCOPE, prompt: 'select_account',
+    callback: resp => {
+      if (resp.error) { _gcal.error = 'Google sign-in failed: ' + resp.error; gcalCtlRender(); return; }
+      if (!google.accounts.oauth2.hasGrantedAllScopes(resp, GCAL_SCOPE)) { _gcal.error = 'Calendar access was not allowed. Press Connect and tick the calendar box.'; gcalCtlRender(); return; }
+      _gcal.token = resp.access_token; _gcal.expiresAt = Date.now() + (Number(resp.expires_in) || 3600) * 1000 - 60000;
+      _gcal.weeks = {}; _gcal.error = ''; _gcal.hidden = false; _gcal.calName = ''; _gcal.updated = 0;   // a new account's calendar replaces the old one
+      try { localStorage.setItem('exec_gcal', '1'); } catch(e) {}
+      renderSchedule();
+    },
+    error_callback: err => { _gcal.error = err && err.type === 'popup_closed' ? '' : 'Google sign-in window was blocked or closed.'; gcalCtlRender(); }
+  });
+  _gcal.client.requestAccessToken();
+}
+function gcalDisconnect() {
+  if (_gcal.token && window.google && google.accounts) google.accounts.oauth2.revoke(_gcal.token, () => {});
+  _gcal.token = null; _gcal.expiresAt = 0; _gcal.weeks = {};
+  try { localStorage.removeItem('exec_gcal'); } catch(e) {}
+  renderSchedule(); flashUndoHint('Google Calendar disconnected');
+}
+function gcalToggle() { _gcal.hidden = !_gcal.hidden; renderSchedule(); }
+function gcalCtlRender() {
+  const el = document.getElementById('gcal-ctl'); if (!el) return;
+  if (!GCAL_CLIENT_ID) { el.innerHTML = ''; return; }
+  const was = (() => { try { return localStorage.getItem('exec_gcal') === '1'; } catch(e) { return false; } })();
+  const live = _gcal.token && Date.now() < _gcal.expiresAt;
+  const err = _gcal.error ? `<span class="gcal-status" style="color:var(--red)">${escHtml(_gcal.error)}</span>` : '';
+  if (live) el.innerHTML = `${err}<span class="gcal-status" title="The calendar EXEC is reading, as Google names it">Google Calendar${_gcal.calName ? ': <b style="color:var(--text2)">' + escHtml(_gcal.calName) + '</b>' : ''}${_gcal.updated ? ' · updated ' + new Date(_gcal.updated).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }).toLowerCase() : ''}</span><button class="btn btn-ghost btn-sm" onclick="gcalToggle()">${_gcal.hidden ? 'Show' : 'Hide'}</button><button class="gcal-link" onclick="gcalConnect()">Switch account</button><button class="gcal-link" onclick="gcalDisconnect()">Disconnect</button>`;
+  else el.innerHTML = `${err}<button class="btn btn-${was ? 'primary' : 'ghost'} btn-sm" onclick="gcalConnect()">${was ? '↻ Reconnect Google Calendar' : '📅 Show Google Calendar'}</button>`;
+}
+// The calendar read is the main calendar of the Google account you pick in
+// Google's sign-in ("primary" = the signed-in Google account's own calendar)
+// Load the week's events (refreshed when older than 5 minutes)
+async function gcalEnsure(weekKey, force) {
+  if (!(_gcal.token && Date.now() < _gcal.expiresAt) || _gcal.loading[weekKey]) return;
+  const w = _gcal.weeks[weekKey];
+  if (w && !force && Date.now() - w.at < 5 * 60000) return;
+  _gcal.loading[weekKey] = true;
+  try {
+    const q = new URLSearchParams({ timeMin: schedParse(weekKey).toISOString(), timeMax: schedParse(schedShift(weekKey, 7)).toISOString(), singleEvents: 'true', orderBy: 'startTime', maxResults: '250', fields: 'summary,items(id,summary,start,end,status,transparency,attendees(self,responseStatus))' });
+    const r = await fetch('https://www.googleapis.com/calendar/v3/calendars/primary/events?' + q, { headers: { Authorization: 'Bearer ' + _gcal.token } });
+    if (r.status === 401) { _gcal.token = null; _gcal.expiresAt = 0; _gcal.error = ''; }
+    else if (!r.ok) { _gcal.error = 'Google Calendar could not be read (' + r.status + ').'; _gcal.weeks[weekKey] = { at: Date.now(), items: w ? w.items : [] }; }
+    else { const j = await r.json(); _gcal.weeks[weekKey] = { at: Date.now(), items: j.items || [] }; _gcal.updated = Date.now(); _gcal.error = ''; _gcal.calName = j.summary || ''; }
+  } catch(e) { _gcal.error = 'Google Calendar could not be reached.'; _gcal.weeks[weekKey] = { at: Date.now(), items: w ? w.items : [] }; }
+  _gcal.loading[weekKey] = false;
+  const sch = document.getElementById('section-schedule');
+  if (sch && sch.classList.contains('active')) renderSchedule();
+}
+// One day's events: timed ones as { title, start, end, busy } in minutes, plus all-day titles
+function gcalDay(key) {
+  const out = { timed: [], allDay: [] };
+  if (!gcalOn()) return out;
+  const w = _gcal.weeks[schedWeekStart(key)]; if (!w) return out;
+  const d0 = schedParse(key), d1 = schedParse(schedShift(key, 1));
+  w.items.forEach(ev => {
+    if (ev.status === 'cancelled') return;
+    const me = (ev.attendees || []).find(a => a.self);
+    if (me && me.responseStatus === 'declined') return;
+    const title = ev.summary || '(busy)';
+    if (ev.start && ev.start.date) { if (ev.start.date <= key && key < ev.end.date) out.allDay.push(title); return; }
+    const s = new Date(ev.start.dateTime), e = new Date(ev.end.dateTime);
+    if (e <= d0 || s >= d1) return;
+    out.timed.push({ title, cal: ev._cal || '', start: Math.round((Math.max(s, d0) - d0) / 60000), end: Math.round((Math.min(e, d1) - d0) / 60000), busy: ev.transparency !== 'transparent' });
+  });
+  return out;
+}
+function gcalBusy(key) { return gcalDay(key).timed.filter(e => e.busy).map(e => ({ start: e.start, mins: e.end - e.start })); }
+setInterval(() => { const sch = document.getElementById('section-schedule'); if (sch && sch.classList.contains('active') && !document.hidden) gcalEnsure(schedWeekStart(schedDate || today())); }, 60000);
+document.addEventListener('visibilitychange', () => { if (!document.hidden && document.getElementById('section-schedule').classList.contains('active')) { gcalCtlRender(); gcalEnsure(schedWeekStart(schedDate || today())); } });
 function schedFreeSlot(key, len) {
   const d = schedData();
   let t = d.workStart;
   if (key === today()) { const n = new Date(); t = Math.max(t, Math.ceil((n.getHours() * 60 + n.getMinutes()) / 15) * 15); }
-  for (const b of schedBlocks(key)) {
+  for (const b of schedBlocks(key).concat(gcalBusy(key)).sort((a, c) => a.start - c.start)) {
     if (b.start + b.mins <= t) continue;
     if (b.start - t >= len) break;
     t = Math.max(t, b.start + b.mins);
@@ -3530,6 +3628,7 @@ function renderSchedule() {
   document.getElementById('sched-date-label').textContent = label;
   document.querySelectorAll('.sched-view-btn').forEach(b => b.classList.toggle('active', b.dataset.v === schedView));
   body.innerHTML = schedView === 'week' ? schedWeekHtml() : schedDayHtml();
+  gcalLoadLib(); gcalCtlRender(); gcalEnsure(schedWeekStart(schedDate));
   schedNowLine();
   clearInterval(_schedNowTimer); _schedNowTimer = setInterval(schedNowLine, 60000);
 }
@@ -3542,6 +3641,18 @@ function schedTimelineHtml(key, px, compact) {
   for (let i = 0; i <= hours; i++) h += `<div class="sched-hr" style="top:${i * px}px">${compact ? '' : `<span>${schedClock(SCHED_FROM + i * 60)}</span>`}</div>`;
   const blocks = schedBlocks(key), lay = schedLayout(blocks);
   const L = compact ? 1 : 50, R = compact ? 1 : 4;
+  // Google events sit in a lane on the right; blocks use the rest
+  const gc = gcalDay(key), lane = gcalOn() && gc.timed.length ? (compact ? 34 : 30) : 0;
+  // only blocks that share time with a Google event make room for the lane
+  // (a whole group of side-by-side blocks moves together so they never overlap)
+  const hitsEv = b => gc.timed.some(e => e.start < b.start + b.mins && e.end > b.start);
+  const groupHit = {};
+  blocks.forEach(b => { const g = (lay[b.id] || [])[2]; if (lane && hitsEv(b)) groupHit[g] = true; });
+  gc.timed.forEach(ev => {
+    const top = y(ev.start), hgt = Math.max(px / 4, y(ev.end) - top) - 2;
+    h += `<div class="gcal-ev${ev.busy ? '' : ' free'}" style="top:${top}px;height:${hgt}px;width:calc(${lane}% - 4px)" title="${escHtml(ev.title + (ev.cal ? ' · ' + ev.cal : ''))}">${compact ? escHtml(ev.title) : `<b>${escHtml(ev.title)}</b><br>${schedClock(ev.start)} – ${schedClock(ev.end)}`}</div>`;
+  });
+  if (gc.allDay.length) h += `<div class="gcal-allday" title="${escHtml(gc.allDay.join(' · '))}">All day: ${escHtml(gc.allDay.join(' · '))}</div>`;
   blocks.forEach(b => {
     const t = SCHED_TYPES[b.type] || SCHED_TYPES.admin;
     const top = y(b.start), height = Math.max(px / 4, y(b.start + b.mins) - top) - 2;
@@ -3562,7 +3673,9 @@ function schedTimelineHtml(key, px, compact) {
       : tasks.length && !small ? head + taskRows
       : `<span class="sched-blk-type">${t.label}${rep}${small ? '' : `<span class="sched-blk-time">${schedClock(b.start)} – ${schedClock(b.start + b.mins)}</span>`}</span>${small ? '<span>·</span>' : ''}<span class="sched-blk-title">${escHtml(b.title || '')}</span>`;
     const side = compact ? '' : `<div class="sched-blk-side">${dn ? `<span class="sched-blk-done">${schedDur(dn)} done ✓</span>` : ''}${shown < tasks.length || tasks.length > 1 ? count : ''}${key === today() && b.type !== 'break' ? `<button class="btn btn-ghost btn-sm sched-start" onclick="event.stopPropagation();schedStart('${key}','${b.id}')">▶ Start</button>` : ''}</div>`;
-    const pos = `left:calc(${L}px + (100% - ${L + R}px) * ${col} / ${cols});width:calc((100% - ${L + R}px) / ${cols} - ${cols > 1 ? 2 : 0}px);right:auto`;
+    const shrink = groupHit[(lay[b.id] || [])[2]];
+    const laneW = shrink ? ` - ${lane}%` : '';
+    const pos = `left:calc(${L}px + (100% - ${L + R}px${laneW}) * ${col} / ${cols});width:calc((100% - ${L + R}px${laneW}) / ${cols} - ${cols > 1 || shrink ? 2 : 0}px);right:auto`;
     h += `<div class="sched-blk${small ? ' small' : ''}${tasks.length && !small && !compact ? ' has-tasks' : ''}" draggable="true" ondragstart="schedDragBlock(event,'${b.id}')" onclick="event.stopPropagation();if(!_schedLPFired)openBlockModal('${key}','${b.id}')" oncontextmenu="schedMenu(event,'${key}','${b.id}')" ontouchstart="schedTouch(event,'${key}','${b.id}')" title="${escHtml(t.label + ': ' + (b.title || '') + ' · ' + schedClock(b.start) + ' – ' + schedClock(b.start + b.mins) + (b.repeatId ? ' · repeats' : '') + ' · right-click for more')}" style="top:${top}px;height:${height}px;${pos};--c:${t.color}"><div class="sched-blk-main">${main}</div>${side}</div>`;
   });
   h += '<div class="sched-now" style="display:none"></div></div>';
@@ -3589,7 +3702,11 @@ function schedPanelHtml(key) {
     return `<div class="sched-t5" draggable="true" ondragstart="schedDragTask(event,'${t.id}')" title="Drag onto the timeline">${icon}<span class="sched-t5-title${t.done ? ' done' : ''}">${escHtml(t.title)}</span><span class="sched-t5-est">${t.est ? schedDur(Number(t.est)) : 'no est.'}</span>${!t.done && !placed(t) ? `<button class="btn btn-ghost btn-sm" onclick="schedPlace('${key}','${t.id}')">Place</button>` : ''}</div>`;
   }).join('') || `<div class="sched-empty">${key === today() ? "No tasks in Today's 5. Pin tasks with TODAY on the Tasks tab, then drag them here or press Place." : key === schedShift(today(), 1) ? "No tasks picked for tomorrow yet. Pick them in Review → Evening Review → Plan tomorrow." : "Today's 5 is picked on the day itself, or the night before in Evening Review. Use + Add Block to plan this day."}</div>`;
   const workLen = Math.max(1, d.workEnd - d.workStart);
-  const booked = blocks.reduce((s, b) => s + Math.max(0, Math.min(b.start + b.mins, d.workEnd) - Math.max(b.start, d.workStart)), 0);
+  // blocks and Google meetings together, overlaps counted once
+  const spans = blocks.concat(gcalBusy(key)).map(b => [Math.max(b.start, d.workStart), Math.min(b.start + b.mins, d.workEnd)]).filter(([a, z]) => z > a).sort((p, q) => p[0] - q[0]);
+  let booked = 0, edge = -1;
+  spans.forEach(([a, z]) => { if (z > edge) { booked += z - Math.max(a, edge); edge = z; } });
+  const meet = gcalBusy(key).reduce((s, e) => s + Math.max(0, Math.min(e.start + e.mins, d.workEnd) - Math.max(e.start, d.workStart)), 0);
   const pct = Math.round(booked / workLen * 100);
   const col = pct > 100 ? 'var(--red)' : pct >= 85 ? 'var(--orange)' : 'var(--green)';
   const open = Math.max(0, workLen - booked);
@@ -3607,7 +3724,7 @@ function schedPanelHtml(key) {
   if (!pvd) pvd = '<div class="sched-empty">Plan blocks, then run Focus sessions to compare.</div>';
   return `<div class="sched-panel">
 <div class="db-module"><div class="db-module-head"><span class="db-module-title">Today's 5</span><span style="font-size:11px;color:var(--text3);font-family:var(--sans)">drag onto the timeline</span></div><div class="db-module-body" style="padding:2px 14px">${rows}</div></div>
-<div class="db-module"><div class="db-module-head"><span class="db-module-title">Booked</span><span style="font-family:var(--mono);font-size:12px;color:${col}">${pct}%</span></div><div class="db-module-body" style="padding:10px 14px 12px"><div class="sched-row-label" style="margin-top:0"><span>${schedDur(booked)} of ${schedDur(workLen)} workday</span></div><div class="sched-meter"><div style="width:${Math.min(100, pct)}%;background:${col}"></div></div>${note}</div></div>
+<div class="db-module"><div class="db-module-head"><span class="db-module-title">Booked</span><span style="font-family:var(--mono);font-size:12px;color:${col}">${pct}%</span></div><div class="db-module-body" style="padding:10px 14px 12px"><div class="sched-row-label" style="margin-top:0"><span>${schedDur(booked)} of ${schedDur(workLen)} workday${meet ? ' · incl. ' + schedDur(meet) + ' Google meetings' : ''}</span></div><div class="sched-meter"><div style="width:${Math.min(100, pct)}%;background:${col}"></div></div>${note}</div></div>
 <div class="db-module"><div class="db-module-head"><span class="db-module-title">Planned vs done</span><span style="font-size:11px;color:var(--text3);font-family:var(--sans)">from Focus sessions</span></div><div class="db-module-body" style="padding:2px 14px 12px">${pvd}</div></div>
 </div>`;
 }
